@@ -33,8 +33,16 @@ class IPMIStatus(NodeStatus):
         self.username = username
         self.password = password
 
+    def check_ipmi_configured(self):
+        self.answer['checks'].append('config')
+
+        return (self.ip and self.username and self.password)
+
+
+
     def check_udp_ping(self):
         self.answer['checks'].append('udp_ping')
+
         ipmi_message = (
             "0600ff07000000000000000000092018c88100388e04b5").decode('hex')
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -78,7 +86,7 @@ class IPMIStatus(NodeStatus):
         return not rc
 
     def status(self):
-        self.tagged_log_debug("Health checker started")
+        self.tagged_log_debug("IPMI checker started")
         self.answer = {
             'check': 'IPMI',
             'status': 'UNKN',
@@ -87,6 +95,11 @@ class IPMIStatus(NodeStatus):
             'failed check': '',
             'details': ''
         }
+
+        if not self.check_ipmi_configured():
+            self.answer['failed check'] = self.answer['checks'][-1]
+            return self.answer
+
         if not self.check_udp_ping():
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
