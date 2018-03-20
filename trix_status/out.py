@@ -21,9 +21,13 @@ import sys
 
 class colors:
     RED = "\033[31m"
-    YELLOW = "\033[31m"
+    LIGHTRED = "\033[91m"
+    YELLOW = "\033[33m"
+    LIGHTYELLOW = "\033[93m"
     CYAN = "\033[36m"
+    LIGHTCYAN = "\033[96m"
     GREEN = "\033[32m"
+    LIGHTGREEN = "\033[92m"
     DEFAULT = "\033[39m"
 
 
