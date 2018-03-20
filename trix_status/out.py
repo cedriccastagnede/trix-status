@@ -145,11 +145,12 @@ class Out(object):
 
         print(out)
 
-    def statusbar(self, update=True, width=30):
+    def statusbar(self, update=True):
+        width = len(self.sep) - 11
         if update:
             self.done += 1
         progress_perc = (100.*self.done)/self.total
-        out = "{: 5.2f}%".format(progress_perc)
+        out = "{: 7.2f}%".format(progress_perc)
         nbars = int((progress_perc/100)*width)
         out += " [" + "|" * nbars + "." * (width - nbars) + "]"
         sys.stdout.write(out)
