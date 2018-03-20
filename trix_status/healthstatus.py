@@ -51,7 +51,8 @@ class HealthStatus(NodeStatus):
         self.tagged_log_debug("Check ping rc = {}".format(rc))
 
         if rc:
-            self.answer['details'] = stdout_lines[-2]
+            if len(stdout_lines) > 1:
+                self.answer['details'] = stdout_lines[-2]
 
         return not rc
 
@@ -198,7 +199,7 @@ class HealthStatus(NodeStatus):
 
         if not self.check_resolv():
             self.answer['failed check'] = self.answer['checks'][-1]
-            #return self.answer
+            return self.answer
 
         self.answer['status'] = 'DOWN'
 
