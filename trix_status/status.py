@@ -57,10 +57,13 @@ class TrixStatus(object):
             status_col=self.status_col,
             detail_col=self.detail_col,
             verbose=self.verbose,
-            order=['health', 'ipmi']
+            order=['health', 'ipmi'],
+            total=len(self.nodes),
         )
 
-        self.out.header()
+        if not self.sorted_output:
+            self.out.header()
+            self.out.statusbar(update=False)
 
         self.timeout = timeout
         self.log.debug('Start thread pool')
@@ -73,6 +76,7 @@ class TrixStatus(object):
 
         if self.sorted_output:
             workers_return.sort(key=lambda x: x[0])
+            self.out.header()
             for node, status in workers_return:
                 self.out.line(node, status)
 
@@ -109,9 +113,12 @@ class TrixStatus(object):
         self.log.debug(
             '{}:Retuned from check workers: {}'.format(node, workers_return))
 
-        if not self.sorted_output:
-            with self.lock:
+        with self.lock:
+            if not self.sorted_output:
                 self.out.line(node, workers_return)
+                self.out.statusbar()
+            else:
+                self.out.statusbar()
 
         return (node, workers_return)
 

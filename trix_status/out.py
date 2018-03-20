@@ -16,6 +16,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 
 import logging
+import sys
 
 
 class colors:
@@ -29,7 +30,7 @@ class colors:
 class Out(object):
 
     def __init__(self, max_node_name, status_col=10, detail_col=20,
-                 verbose=False, order=[], spaces=4):
+                 verbose=False, order=[], spaces=4, total=0):
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
@@ -37,6 +38,8 @@ class Out(object):
         self.max_node_name = max_node_name
         self.status_col = status_col
         self.detail_col = detail_col
+        self.done = 0
+        self.total = total
         self.verbose = verbose
         self.order = order
 
@@ -141,3 +144,14 @@ class Out(object):
             out += "|"
 
         print(out)
+
+    def statusbar(self, update=True, width=30):
+        if update:
+            self.done += 1
+        progress_perc = (100.*self.done)/self.total
+        out = "{: 5.2f}%".format(progress_perc)
+        nbars = int((progress_perc/100)*width)
+        out += " [" + "|" * nbars + "." * (width - nbars) + "]"
+        sys.stdout.write(out)
+        sys.stdout.write('\r')
+        sys.stdout.flush()
