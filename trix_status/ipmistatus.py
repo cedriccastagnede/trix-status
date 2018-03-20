@@ -82,7 +82,7 @@ class IPMIStatus(NodeStatus):
         self.answer = {
             'check': 'ipmi',
             'status': 'UNKN',
-            'color': colors.DEFAULT,
+            'color': colors.RED,
             'checks': [],
             'failed check': '',
             'details': ''
