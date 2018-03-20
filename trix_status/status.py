@@ -28,11 +28,12 @@ class TrixStatus(object):
 
     def __init__(self, nodes, fanout=30,
                  status_col=15, detail_col=30,
-                 verbose=False):
+                 verbose=False, sorted_output=False):
 
         self.status_col = status_col
         self.detail_col = detail_col
         self.verbose = verbose
+        self.sorted_output = sorted_output
 
         self.nodes = nodes
         self.fanout = fanout
@@ -69,6 +70,12 @@ class TrixStatus(object):
         self.log.debug('Map main workers to threads')
         workers_return = thread_pool.map(self.main_worker, self.nodes)
         self.log.debug('Retuned from workers: {}'.format(workers_return))
+
+        if self.sorted_output:
+            workers_return.sort(key=lambda x: x[0])
+            for node, status in workers_return:
+                self.out.line(node, status)
+
         self.out.separator()
         return True
 
@@ -102,10 +109,11 @@ class TrixStatus(object):
         self.log.debug(
             '{}:Retuned from check workers: {}'.format(node, workers_return))
 
-        with self.lock:
-            self.out.line(node, workers_return)
+        if not self.sorted_output:
+            with self.lock:
+                self.out.line(node, workers_return)
 
-        return True
+        return (node, workers_return)
 
     def check_worker(self, check):
         return check.status()

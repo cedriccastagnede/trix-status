@@ -32,6 +32,7 @@ if __name__ == "__main__":
         verbose=arguments.verbose,
         fanout=arguments.fanout,
         status_col=arguments.status_column,
-        detail_col=arguments.details_column
+        detail_col=arguments.details_column,
+        sorted_output=arguments.sorted_output,
     ).get()
 

@@ -77,18 +77,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--debug", "-d", action="store_const",
-        dest="loglevel", const=logging.DEBUG, default=logging.INFO,
-        help="Debug output")
-
-    parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Show details of failed checks"
+        "--sorted-output", "-s", action="store_true",
+        help="Sort output by node name"
     )
 
     parser.add_argument(
         "--fanout", "-w", type=int, default=10,
-        help="Number of processes"
+        help="Number of checks running simultaneously"
     )
 
     parser.add_argument(
@@ -101,6 +96,15 @@ def parse_arguments():
         help="Width of details' column"
     )
 
+    parser.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show details of failed checks"
+    )
+
+    parser.add_argument(
+        "--debug", "-d", action="store_const",
+        dest="loglevel", const=logging.DEBUG, default=logging.INFO,
+        help="Debug output")
 
     args = parser.parse_args()
     return args
