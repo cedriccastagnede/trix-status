@@ -120,12 +120,13 @@ class TrixStatus(object):
             )
         )
 
-        checks.append(
-            SlurmStatus(
-                node=node,
-                statuses=self.sinfo
+        if self.sinfo:
+            checks.append(
+                SlurmStatus(
+                    node=node,
+                    statuses=self.sinfo
+                )
             )
-        )
 
         thread_pool = ThreadPool(processes=5)
         self.log.debug('{}:Map check workers to threads'.format(node))
