@@ -27,5 +27,11 @@ if __name__ == "__main__":
     log.setLevel(arguments.loglevel)
 
     nodes = utils.get_nodes()
-    TrixStatus(nodes, verbose=arguments.verbose).get()
+    TrixStatus(
+        nodes,
+        verbose=arguments.verbose,
+        fanout=arguments.fanout,
+        status_col=arguments.status_column,
+        detail_col=arguments.details_column
+    ).get()
 

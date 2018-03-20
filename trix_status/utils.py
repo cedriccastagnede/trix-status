@@ -27,6 +27,7 @@ except ImportError:
 if luna_present and luna.__version__ != '1.2':
     luna_present = False
 
+
 def get_nodes():
     if not luna_present:
         return []
@@ -40,7 +41,7 @@ def get_nodes():
         ipmi_username = ''
         ipmi_password = ''
 
-        if 'bmcsetup' in  group.install_params:
+        if 'bmcsetup' in group.install_params:
             bmcsetup = group.install_params['bmcsetup']
             if 'user' in bmcsetup:
                 ipmi_username = bmcsetup['user']
@@ -67,6 +68,7 @@ def transform_node_dict(nodes, node):
 
     return ret_dict
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="""
@@ -83,6 +85,22 @@ def parse_arguments():
         "--verbose", "-v", action="store_true",
         help="Show details of failed checks"
     )
+
+    parser.add_argument(
+        "--fanout", "-w", type=int, default=10,
+        help="Number of processes"
+    )
+
+    parser.add_argument(
+        "--status-column", "-S", type=int, default=15,
+        help="Width of status column"
+    )
+
+    parser.add_argument(
+        "--details-column", "-D", type=int, default=30,
+        help="Width of details' column"
+    )
+
 
     args = parser.parse_args()
     return args
