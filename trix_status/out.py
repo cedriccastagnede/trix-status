@@ -72,7 +72,7 @@ class Out(object):
         for elem in self.order:
 
             out += " " * self.spaces
-            out += elem.capitalize().ljust(self.status_col)
+            out += elem.ljust(self.status_col)
             out += " " * self.spaces
 
             if self.verbose:

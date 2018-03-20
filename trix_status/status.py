@@ -57,7 +57,7 @@ class TrixStatus(object):
             status_col=self.status_col,
             detail_col=self.detail_col,
             verbose=self.verbose,
-            order=['health', 'ipmi'],
+            order=['Health', 'IPMI'],
             total=len(self.nodes),
         )
 
