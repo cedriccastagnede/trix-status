@@ -17,6 +17,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
 import logging
+import subprocess as sp
 
 luna_present = True
 try:
@@ -93,6 +94,26 @@ def transform_node_dict(nodes, node):
             ret_dict['BMC'] = node_dict['interfaces']['BMC'][4]
 
     return ret_dict
+
+
+def run_cmd(cmd):
+    """
+    Returns 'rc', 'stdout', 'stderr', 'exception'
+    Where 'exception' is a content of Python exception if any
+    """
+    rc = 255
+    stdout, stderr, exception = "", "", ""
+    try:
+        proc = sp.Popen(
+            cmd, shell=True,
+            stdout=sp.PIPE, stderr=sp.PIPE
+        )
+        stdout, stderr = proc.communicate()
+        proc.wait()
+        rc = proc.returncode
+    except Exception as e:
+        exception = e
+    return rc, stdout, stderr, exception
 
 
 def parse_arguments():

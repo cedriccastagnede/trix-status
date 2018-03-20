@@ -17,6 +17,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import subprocess as sp
+import utils
 from multiprocessing.pool import ThreadPool
 
 
@@ -35,20 +36,12 @@ class NodeStatus(object):
 
     def cmd(self, cmd):
         self.tagged_log_debug("Command to run: '{}'".format(cmd))
-        try:
-            proc = sp.Popen(
-                cmd, shell=True,
-                stdout=sp.PIPE, stderr=sp.PIPE
-            )
-            stdout, stderr = proc.communicate()
-            proc.wait()
-            rc = proc.returncode
-        except Exception as e:
+        rc, stdout, stderr, e = utils.run_cmd(cmd)
+
+        if e:
             self.tagged_log_debug(
                 "Exception on running '{}': '{}'".format(cmd, e)
             )
-            rc = 255
-            stdout, stderr = '', ''
 
         stdout_lines = []
         stdout_lines = filter(

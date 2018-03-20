@@ -22,6 +22,7 @@ from multiprocessing import Lock
 from out import Out
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
+from slurmstatus import SlurmStatus
 
 
 class TrixStatus(object):
@@ -52,12 +53,18 @@ class TrixStatus(object):
             if l > max_node_name:
                 max_node_name = l
 
+        self.sinfo = SlurmStatus().get_sinfo()
+
+        checks = ['Health', 'IPMI']
+        if self.sinfo:
+            checks.append("SLURM")
+
         self.out = Out(
             max_node_name=max_node_name,
             status_col=self.status_col,
             detail_col=self.detail_col,
             verbose=self.verbose,
-            order=['Health', 'IPMI'],
+            order=checks,
             total=len(self.nodes),
         )
 
@@ -71,6 +78,7 @@ class TrixStatus(object):
         self.lock = Lock()
 
         self.log.debug('Map main workers to threads')
+
         try:
             workers_return = thread_pool.map(self.main_worker, self.nodes)
         except KeyboardInterrupt:
@@ -109,6 +117,13 @@ class TrixStatus(object):
                 username=node_dict['ipmi_username'],
                 password=node_dict['ipmi_password'],
                 timeout=self.timeout
+            )
+        )
+
+        checks.append(
+            SlurmStatus(
+                node=node,
+                statuses=self.sinfo
             )
         )
 
