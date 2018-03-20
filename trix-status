@@ -19,7 +19,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
 from trix_status import utils
-from trix_status.status import TrixStatus
+from trix_status import TrixStatus
 
 if __name__ == "__main__":
     arguments = utils.parse_arguments()
