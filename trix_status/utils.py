@@ -24,15 +24,31 @@ try:
 except ImportError:
     luna_present = False
 
+hostlist_present = True
+try:
+    import hostlist
+except ImportError:
+    hostlist_present = False
+
 if luna_present and luna.__version__ != '1.2':
     luna_present = False
 
 
-def get_nodes():
+def get_nodes(group=None, nodelist=None):
+    log = logging.getLogger("trix-status")
     if not luna_present:
+        log.error("Luna 1.2 is not installed")
         return []
     nodes = []
-    groups = luna.list('group')
+    av_groups = luna.list('group')
+    if group is None:
+        groups = av_groups
+    else:
+        if group not in av_groups:
+            log.error("No such group '{}'".format(group))
+            return []
+        groups = [group]
+
     for group_name in groups:
         group = luna.Group(group_name)
         group_nodes = group.list_nodes()
@@ -54,7 +70,17 @@ def get_nodes():
             node_dict['ipmi_password'] = ipmi_password
             nodes.append(node_dict)
 
-    return nodes
+    if nodelist is None:
+        return nodes
+
+    if not hostlist_present:
+        log.info(
+            "hostlist is not installed. List of nodes will not be expanded")
+        nodelist = nodelist.split(",")
+    else:
+        nodelist = hostlist.expand_hostlist(nodelist)
+
+    return filter(lambda x: x['node'] in nodelist, nodes)
 
 
 def transform_node_dict(nodes, node):
@@ -79,6 +105,16 @@ def parse_arguments():
     parser.add_argument(
         "--sorted-output", "-s", action="store_true",
         help="Sort output by node name"
+    )
+
+    parser.add_argument(
+        "--group", "-g", type=str,
+        help="Limit checks to particular Luna' group"
+    )
+
+    parser.add_argument(
+        "--nodes", "-n", type=str,
+        help="Check only following nodes. Hostlist expressions are supported"
     )
 
     parser.add_argument(
