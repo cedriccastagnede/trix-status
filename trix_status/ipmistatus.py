@@ -45,7 +45,7 @@ class IPMIStatus(NodeStatus):
             data, addr = sock.recvfrom(1024)
             udp_pingable = True
         except:
-            udp_pingable
+            udp_pingable = False
 
         return udp_pingable
 
