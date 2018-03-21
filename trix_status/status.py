@@ -19,7 +19,6 @@ import logging
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 
-import config
 from out import Out
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
@@ -31,16 +30,12 @@ class TrixStatus(object):
     def __init__(self, nodes, args):
 
         self.nodes = nodes
+        self.args = args
 
-        self.verbose = args.verbose
         self.fanout = args.fanout
-        self.status_col = args.status_column
-        self.detail_col = args.details_column
-        self.sorted_output = args.sorted_output
-        self.show_color = not args.no_color
-        self.show_table = not args.no_table
         self.checks = args.checks
         self.timeout = args.timeout
+        self.sorted_output = args.sorted_output
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
@@ -57,7 +52,6 @@ class TrixStatus(object):
             if l > max_node_name:
                 max_node_name = l
 
-
         if 'slurm' in self.checks:
             self.sinfo = SlurmStatus().get_sinfo()
             if not self.sinfo:
@@ -65,13 +59,8 @@ class TrixStatus(object):
 
         self.out = Out(
             max_node_name=max_node_name,
-            status_col=self.status_col,
-            detail_col=self.detail_col,
-            verbose=self.verbose,
-            columns=self.checks,
             total=len(self.nodes),
-            color=self.show_color,
-            table=self.show_table,
+            args=self.args
         )
 
         if not self.sorted_output:
