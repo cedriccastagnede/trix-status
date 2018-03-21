@@ -30,7 +30,9 @@ class colors:
     GREEN = "\033[32m"
     LIGHTGREEN = "\033[92m"
     DEFAULT = "\033[39m"
-
+    BGLIGHGRAY = "\033[47m"
+    BGBLACK = "\033[40m"
+    BGDEFAULT = "\033[49m"
 
 class Out(object):
 
@@ -198,7 +200,10 @@ class Out(object):
         progress_perc = (100.*self.done)/self.total
         out = "{: 7.2f}%".format(progress_perc)
         nbars = int((progress_perc/100)*width)
-        out += " [" + "|" * nbars + "." * (width - nbars) + "]"
+        out += " ["
+        out += "#" * nbars
+        out +=  " " * (width - nbars)
+        out += "]"
         sys.stdout.write(out)
         sys.stdout.write('\r')
         sys.stdout.flush()
