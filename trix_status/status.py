@@ -23,6 +23,7 @@ from out import Out
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
 from slurmstatus import SlurmStatus
+from lunastatus import LunaStatus
 
 
 class TrixStatus(object):
@@ -120,6 +121,9 @@ class TrixStatus(object):
                     statuses=self.sinfo
                 )
             )
+
+        if 'luna' in self.checks:
+            checks.append(LunaStatus(node=node))
 
         thread_pool = ThreadPool(processes=5)
         self.log.debug('{}:Map check workers to threads'.format(node))
