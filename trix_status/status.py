@@ -82,12 +82,7 @@ class TrixStatus(object):
 
         self.log.debug('Map main workers to threads')
 
-        try:
-            workers_return = thread_pool.map(self.main_worker, self.nodes)
-        except KeyboardInterrupt:
-            self.log.info('KeyboardInterrupt. Canceled')
-            thread_pool.terminate()
-            return False
+        workers_return = thread_pool.map(self.main_worker, self.nodes)
         self.log.debug('Retuned from workers: {}'.format(workers_return))
 
         if self.sorted_output:

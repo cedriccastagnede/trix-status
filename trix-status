@@ -29,7 +29,7 @@ if __name__ == "__main__":
     nodes = utils.get_nodes(
         arguments.group, arguments.nodes)
 
-    TrixStatus(
-        nodes,
-        arguments
-    ).get()
+    try:
+        TrixStatus(nodes, arguments).get()
+    except KeyboardInterrupt:
+        log.info('KeyboardInterrupt. Canceled')
