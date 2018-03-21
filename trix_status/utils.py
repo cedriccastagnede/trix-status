@@ -18,6 +18,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import argparse
 import logging
 import subprocess as sp
+import config
 
 luna_present = True
 try:
@@ -136,6 +137,14 @@ def parse_arguments():
     parser.add_argument(
         "--nodes", "-n", type=str,
         help="Check only following nodes. Hostlist expressions are supported"
+    )
+
+    checks = config.available_checks.keys()
+    checks.sort()
+    parser.add_argument(
+        "--checks", "-c", choices=checks, default=checks,
+        nargs="*",
+        help="Run only specified checks"
     )
 
     parser.add_argument(

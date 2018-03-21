@@ -88,7 +88,7 @@ class IPMIStatus(NodeStatus):
     def status(self):
         self.tagged_log_debug("IPMI checker started")
         self.answer = {
-            'check': 'IPMI',
+            'check': 'ipmi',
             'status': 'UNKN',
             'color': colors.RED,
             'checks': [],

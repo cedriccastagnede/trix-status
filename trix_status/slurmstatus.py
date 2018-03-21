@@ -10,7 +10,7 @@ class SlurmStatus(object):
 
     def status(self):
         self.answer = {
-            'check': 'SLURM',
+            'check': 'slurm',
             'status': 'UNKN',
             'color': colors.RED,
             'checks': [],

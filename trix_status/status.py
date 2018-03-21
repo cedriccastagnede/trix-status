@@ -19,6 +19,7 @@ import logging
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 
+import config
 from out import Out
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
@@ -38,6 +39,7 @@ class TrixStatus(object):
         self.sorted_output = args.sorted_output
         self.show_color = not args.no_color
         self.show_table = not args.no_table
+        self.checks = args.checks
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
@@ -54,18 +56,18 @@ class TrixStatus(object):
             if l > max_node_name:
                 max_node_name = l
 
-        self.sinfo = SlurmStatus().get_sinfo()
 
-        checks = ['Health', 'IPMI']
-        if self.sinfo:
-            checks.append("SLURM")
+        if 'slurm' in self.checks:
+            self.sinfo = SlurmStatus().get_sinfo()
+            if not self.sinfo:
+                self.checks.remove('slurm')
 
         self.out = Out(
             max_node_name=max_node_name,
             status_col=self.status_col,
             detail_col=self.detail_col,
             verbose=self.verbose,
-            order=checks,
+            columns=self.checks,
             total=len(self.nodes),
             color=self.show_color,
             table=self.show_table,
@@ -101,24 +103,28 @@ class TrixStatus(object):
         checks = []
         node = node_dict['node']
 
-        checks.append(
-            HealthStatus(
-                node=node,
-                timeout=self.timeout
-            )
-        )
+        if 'health' in self.checks:
 
-        checks.append(
-            IPMIStatus(
-                node=node,
-                ip=node_dict['BMC'],
-                username=node_dict['ipmi_username'],
-                password=node_dict['ipmi_password'],
-                timeout=self.timeout
+            checks.append(
+                HealthStatus(
+                    node=node,
+                    timeout=self.timeout
+                )
             )
-        )
 
-        if self.sinfo:
+        if 'ipmi' in self.checks:
+
+            checks.append(
+                IPMIStatus(
+                    node=node,
+                    ip=node_dict['BMC'],
+                    username=node_dict['ipmi_username'],
+                    password=node_dict['ipmi_password'],
+                    timeout=self.timeout
+                )
+            )
+
+        if 'slurm' in self.checks:
             checks.append(
                 SlurmStatus(
                     node=node,

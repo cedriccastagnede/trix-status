@@ -17,6 +17,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import sys
+import config
 
 
 class colors:
@@ -34,7 +35,7 @@ class colors:
 class Out(object):
 
     def __init__(self, max_node_name, status_col=10, detail_col=20,
-                 verbose=False, order=[], spaces=4, total=0,
+                 verbose=False, columns=[], spaces=4, total=0,
                  table=True, color=True):
 
         module_name = self.__module__ + "." + type(self).__name__
@@ -46,7 +47,13 @@ class Out(object):
         self.done = 0
         self.total = total
         self.verbose = verbose
-        self.order = order
+
+        # preserve order of specified columns,
+        # but remove duplicates:
+        # [1, 4, 2, 2, 4, 3, 5, 5, 5, 6] -> [1, 4, 2, 3, 5, 6]
+        self.column_names = []
+        [self.column_names.append(e)
+            for e in columns if e not in self.column_names]
 
         self.spaces = 2
 
@@ -60,11 +67,14 @@ class Out(object):
         if color and sys.stdout.isatty():
             self.color = True
 
-        self.lengths = [max_node_name] + [self.status_col] * len(order)
+        self.lengths = (
+            [max_node_name]
+            + [self.status_col] * len(self.column_names)
+        )
         if self.verbose:
             self.lengths = (
                 [max_node_name]
-                + [self.status_col, self.detail_col] * len(order)
+                + [self.status_col, self.detail_col] * len(self.column_names)
             )
 
         self.sep = (
@@ -85,10 +95,11 @@ class Out(object):
         out = self.col_sep + " " * self.spaces
         out += first_col[:self.max_node_name].ljust(self.max_node_name)
         out += " " * self.spaces + self.col_sep
-        for elem in self.order:
+        for elem in self.column_names:
 
+            col_name = config.available_checks[elem]
             out += " " * self.spaces
-            out += elem.ljust(self.status_col)
+            out += col_name.ljust(self.status_col)
             out += " " * self.spaces
 
             if self.verbose:
@@ -106,22 +117,22 @@ class Out(object):
         fields = {}
 
         for elem in json:
-            if 'check' not in elem or elem['check'] not in self.order:
+            if 'check' not in elem or elem['check'] not in self.column_names:
                 self.log.debug("Fields does not match")
                 return None
             fields[elem['check']] = elem
 
-        if len(fields) != len(self.order):
+        if len(fields) != len(self.column_names):
             self.log.debug("Fields does not match")
             return None
 
-        if len(self.order) == 0:
+        if len(self.column_names) == 0:
             return None
 
         out = self.col_sep + " " * self.spaces
         out += node.ljust(self.max_node_name)
         out += " " * self.spaces + self.col_sep
-        for elem in self.order:
+        for elem in self.column_names:
             node_status = fields[elem]['status']
             color = fields[elem]['color']
 

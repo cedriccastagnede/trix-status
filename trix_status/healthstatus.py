@@ -189,7 +189,7 @@ class HealthStatus(NodeStatus):
     def status(self):
         self.tagged_log_debug("Health checker started")
         self.answer = {
-            'check': 'Health',
+            'check': 'health',
             'status': 'UNKN',
             'color': colors.RED,
             'checks': [],
