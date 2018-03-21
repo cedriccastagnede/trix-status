@@ -40,11 +40,12 @@ class TrixStatus(object):
         self.show_color = not args.no_color
         self.show_table = not args.no_table
         self.checks = args.checks
+        self.timeout = args.timeout
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
 
-    def get(self, timeout=10):
+    def get(self):
         if self.nodes == []:
             self.log.debug('Nodelist is empty')
             return None
@@ -77,7 +78,6 @@ class TrixStatus(object):
             self.out.header()
             self.out.statusbar(update=False)
 
-        self.timeout = timeout
         self.log.debug('Start thread pool')
         thread_pool = ThreadPool(processes=self.fanout)
         self.lock = Lock()

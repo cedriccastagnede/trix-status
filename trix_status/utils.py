@@ -153,6 +153,11 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--timeout", "-t", type=int, default=10,
+        help="Timeout for running checks"
+    )
+
+    parser.add_argument(
         "--status-column", "-S", type=int, default=15,
         help="Width of status column"
     )
