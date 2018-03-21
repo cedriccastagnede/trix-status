@@ -133,26 +133,42 @@ class Out(object):
         out = self.col_sep + " " * self.spaces
         out += node.ljust(self.max_node_name)
         out += " " * self.spaces + self.col_sep
+
         for elem in self.column_names:
+
             node_status = fields[elem]['status']
-            color = fields[elem]['color']
+            failed_check = ""
 
             if fields[elem]['failed check']:
-                node_status += "({})".format(fields[elem]['failed check'])
+                failed_check = "({})".format(fields[elem]['failed check'])
 
-            if len(node_status) > self.status_col:
-                node_status = node_status[:(self.status_col - 3)] + "..."
+            color = fields[elem]['color']
 
-            node_status = node_status.ljust(self.status_col)
+            status_len = len(node_status) + len(failed_check)
+            out_status = node_status + failed_check
+
+            # if status+failed_check do not fir into column
+            # cut and add '...' on the end
+            if status_len > self.status_col:
+                out_status = out_status[:(self.status_col - 3)] + "..."
 
             if self.color:
+                # Several cases here. It depends on column width
+                # 1. STATUS(failed_check)
+                # 2. STATUS(faile...
+                # 3. STA...
+                # start with 3
+                if len(out_status) - 3 < len(node_status):
+                    out_status = color + out_status + colors.DEFAULT
+                else:
+                    # 1 and 2
+                    tmp = out_status[len(node_status):]
+                    out_status = color + node_status + colors.DEFAULT
+                    out_status += tmp
 
-                node_status = (
-                    color + fields[elem]['status']
-                    + colors.DEFAULT
-                    + node_status[len(fields[elem]['status']):]
-                    + colors.DEFAULT
-                )
+            # cant use ljust here, as coloring symbols
+            # are counted in lenght, but do not use position on screen
+            out_status += " " * (self.status_col - status_len)
 
             node_details = fields[elem]['details']
 
@@ -162,7 +178,7 @@ class Out(object):
             node_details = node_details.ljust(self.detail_col)
 
             out += " " * self.spaces
-            out += node_status
+            out += out_status
             out += " " * self.spaces
 
             if self.verbose:
