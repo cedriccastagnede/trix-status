@@ -47,6 +47,7 @@ class Out(object):
         self.total = total
         self.verbose = args.verbose
         self.column_names = args.checks
+        self.no_statusbar = args.no_statusbar
 
         self.spaces = 2
 
@@ -184,6 +185,8 @@ class Out(object):
         print(out)
 
     def statusbar(self, update=True):
+        if self.no_statusbar:
+            return
         width = len(self.sep) - 12
         if update:
             self.done += 1
