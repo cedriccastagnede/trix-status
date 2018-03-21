@@ -1,7 +1,8 @@
 import luna
 from out import colors
+from nodestatus import NodeStatus
 
-class LunaStatus(object):
+class LunaStatus(NodeStatus):
 
     def __init__(self, node):
         self.node = node

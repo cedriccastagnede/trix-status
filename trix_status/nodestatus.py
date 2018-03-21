@@ -19,10 +19,13 @@ import logging
 import subprocess as sp
 import utils
 from multiprocessing.pool import ThreadPool
+from abc import ABCMeta, abstractmethod
 
 
 
 class NodeStatus(object):
+
+    __metaclass__ = ABCMeta
 
     def __init__(self, node, timeout=10):
         self.node = node
@@ -57,3 +60,7 @@ class NodeStatus(object):
         )
 
         return rc, stdout, stdout_lines, stderr
+
+    @abstractmethod
+    def status(self):
+        pass

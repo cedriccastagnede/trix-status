@@ -1,7 +1,8 @@
 import utils
 from out import colors
+from nodestatus import NodeStatus
 
-class SlurmStatus(object):
+class SlurmStatus(NodeStatus):
 
     def __init__(self, node=None, statuses=None):
 
