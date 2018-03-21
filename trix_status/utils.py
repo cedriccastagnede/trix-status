@@ -72,8 +72,10 @@ def get_nodes(group=None, nodelist=None):
             node_dict['ipmi_password'] = ipmi_password
             nodes.append(node_dict)
 
-    if nodelist is None:
+    if not nodelist:
         return nodes
+
+    nodelist = ",".join(nodelist)
 
     if not hostlist_present:
         log.info(
@@ -118,6 +120,32 @@ def run_cmd(cmd):
 
 
 def parse_arguments():
+
+    checks = config.available_checks.keys()
+    checks.sort()
+
+    def parse_checks(checks_str):
+        tmp = []
+        for check in checks_str.split(","):
+            if not check:
+                continue
+            if check not in checks:
+                raise argparse.ArgumentTypeError(
+                    (
+                        "Wrong check: {}\n"
+                        + "Available checks: {}")
+                    .format(check, ",".join(checks))
+                )
+            tmp.append(check)
+
+        # preserve order of specified checks,
+        # but remove duplicates:
+        # [1, 4, 2, 2, 4, 3, 5, 5, 5, 6] -> [1, 4, 2, 3, 5, 6]
+        ret = []
+        [ret.append(e) for e in tmp if e not in ret]
+
+        return ret
+
     parser = argparse.ArgumentParser(
         description="""
         Show status of nodes and controllers for TrinityX cluster
@@ -135,16 +163,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--nodes", "-n", type=str,
+        "nodes", nargs="*",
         help="Check only following nodes. Hostlist expressions are supported"
     )
 
-    checks = config.available_checks.keys()
-    checks.sort()
     parser.add_argument(
-        "--checks", "-c", choices=checks, default=checks,
-        nargs="*",
-        help="Run only specified checks"
+        "--checks", "-c", default=checks,
+        #type=lambda x: [e for e in x.split(",") if e in checks],
+        type=parse_checks,
+        help="Comma-separated list of checks: {}".format(",".join(checks))
     )
 
     parser.add_argument(

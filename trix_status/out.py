@@ -37,10 +37,6 @@ class colors:
 class Out(object):
 
     def __init__(self, max_node_name, total, args, spaces=4):
-        #status_col=10, detail_col=20,
-        #         verbose=False, columns=[], spaces=4, total=0,
-        #         table=True, color=True):
-
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
 
@@ -50,13 +46,7 @@ class Out(object):
         self.done = 0
         self.total = total
         self.verbose = args.verbose
-
-        # preserve order of specified columns,
-        # but remove duplicates:
-        # [1, 4, 2, 2, 4, 3, 5, 5, 5, 6] -> [1, 4, 2, 3, 5, 6]
-        self.column_names = []
-        [self.column_names.append(e)
-            for e in args.checks if e not in self.column_names]
+        self.column_names = args.checks
 
         self.spaces = 2
 
