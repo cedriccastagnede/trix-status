@@ -154,6 +154,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--no-color", action="store_true",
+        help="Disable color output"
+    )
+
+    parser.add_argument(
+        "--no-table", action="store_true",
+        help="Disable ASCII graphics"
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Show details of failed checks"
     )

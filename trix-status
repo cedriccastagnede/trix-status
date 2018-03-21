@@ -31,9 +31,5 @@ if __name__ == "__main__":
 
     TrixStatus(
         nodes,
-        verbose=arguments.verbose,
-        fanout=arguments.fanout,
-        status_col=arguments.status_column,
-        detail_col=arguments.details_column,
-        sorted_output=arguments.sorted_output,
+        arguments
     ).get()

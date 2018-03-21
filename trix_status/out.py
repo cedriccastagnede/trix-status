@@ -34,7 +34,8 @@ class colors:
 class Out(object):
 
     def __init__(self, max_node_name, status_col=10, detail_col=20,
-                 verbose=False, order=[], spaces=4, total=0):
+                 verbose=False, order=[], spaces=4, total=0,
+                 table=True, color=True):
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
@@ -48,6 +49,16 @@ class Out(object):
         self.order = order
 
         self.spaces = 2
+
+        self.table = table
+        self.col_sep = " "
+        if self.table:
+            self.col_sep = "|"
+
+        self.color = False
+
+        if color and sys.stdout.isatty():
+            self.color = True
 
         self.lengths = [max_node_name] + [self.status_col] * len(order)
         if self.verbose:
@@ -65,14 +76,15 @@ class Out(object):
         )
 
     def separator(self):
-        print(self.sep)
+        if self.table:
+            print(self.sep)
 
     def header(self):
         self.separator()
         first_col = "Node"
-        out = "|" + " " * self.spaces
+        out = self.col_sep + " " * self.spaces
         out += first_col[:self.max_node_name].ljust(self.max_node_name)
-        out += " " * self.spaces + "|"
+        out += " " * self.spaces + self.col_sep
         for elem in self.order:
 
             out += " " * self.spaces
@@ -80,12 +92,12 @@ class Out(object):
             out += " " * self.spaces
 
             if self.verbose:
-                out += "|"
+                out += self.col_sep
                 out += " " * self.spaces
                 out += "Details".ljust(self.detail_col)
                 out += " " * self.spaces
 
-            out += "|"
+            out += self.col_sep
 
         print(out)
         self.separator()
@@ -106,9 +118,9 @@ class Out(object):
         if len(self.order) == 0:
             return None
 
-        out = "|" + " " * self.spaces
+        out = self.col_sep + " " * self.spaces
         out += node.ljust(self.max_node_name)
-        out += " " * self.spaces + "|"
+        out += " " * self.spaces + self.col_sep
         for elem in self.order:
             node_status = fields[elem]['status']
             color = fields[elem]['color']
@@ -121,12 +133,14 @@ class Out(object):
 
             node_status = node_status.ljust(self.status_col)
 
-            node_status = (
-                color + fields[elem]['status']
-                + colors.DEFAULT
-                + node_status[len(fields[elem]['status']):]
-                + colors.DEFAULT
-            )
+            if self.color:
+
+                node_status = (
+                    color + fields[elem]['status']
+                    + colors.DEFAULT
+                    + node_status[len(fields[elem]['status']):]
+                    + colors.DEFAULT
+                )
 
             node_details = fields[elem]['details']
 
@@ -140,17 +154,17 @@ class Out(object):
             out += " " * self.spaces
 
             if self.verbose:
-                out += "|"
+                out += self.col_sep
                 out += " " * self.spaces
                 out += node_details
                 out += " " * self.spaces
 
-            out += "|"
+            out += self.col_sep
 
         print(out)
 
     def statusbar(self, update=True):
-        width = len(self.sep) - 11
+        width = len(self.sep) - 12
         if update:
             self.done += 1
         progress_perc = (100.*self.done)/self.total

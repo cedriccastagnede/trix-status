@@ -27,17 +27,18 @@ from slurmstatus import SlurmStatus
 
 class TrixStatus(object):
 
-    def __init__(self, nodes, fanout=30,
-                 status_col=15, detail_col=30,
-                 verbose=False, sorted_output=False):
-
-        self.status_col = status_col
-        self.detail_col = detail_col
-        self.verbose = verbose
-        self.sorted_output = sorted_output
+    def __init__(self, nodes, args):
 
         self.nodes = nodes
-        self.fanout = fanout
+
+        self.verbose = args.verbose
+        self.fanout = args.fanout
+        self.status_col = args.status_column
+        self.detail_col = args.details_column
+        self.sorted_output = args.sorted_output
+        self.show_color = not args.no_color
+        self.show_table = not args.no_table
+
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
 
@@ -66,6 +67,8 @@ class TrixStatus(object):
             verbose=self.verbose,
             order=checks,
             total=len(self.nodes),
+            color=self.show_color,
+            table=self.show_table,
         )
 
         if not self.sorted_output:
