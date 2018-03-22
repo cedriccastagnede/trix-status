@@ -53,6 +53,7 @@ def get_nodes(group=None, nodelist=None):
 
     for group_name in groups:
         group = luna.Group(group_name)
+        domain = group.boot_params['domain']
         group_nodes = group.list_nodes()
         sorted_keys = group_nodes.keys()
         sorted_keys.sort()
@@ -70,6 +71,9 @@ def get_nodes(group=None, nodelist=None):
             node_dict = transform_node_dict(group_nodes, node_name)
             node_dict['ipmi_username'] = ipmi_username
             node_dict['ipmi_password'] = ipmi_password
+            node_dict['hostname'] = node_name
+            if domain:
+                node_dict['hostname'] += "." + domain
             nodes.append(node_dict)
 
     if not nodelist:

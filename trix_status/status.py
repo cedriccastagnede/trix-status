@@ -24,6 +24,7 @@ from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
 from slurmstatus import SlurmStatus
 from lunastatus import LunaStatus
+from zabbixstatus import ZabbixStatus
 
 
 class TrixStatus(object):
@@ -54,9 +55,14 @@ class TrixStatus(object):
                 max_node_name = l
 
         if 'slurm' in self.checks:
+            # in order not to run sinfo in every thread
             self.sinfo = SlurmStatus().get_sinfo()
             if not self.sinfo:
                 self.checks.remove('slurm')
+
+        if 'zabbix' in self.checks:
+            # otherwise we will read creds files in every thread
+            self.zabbix_creds = ZabbixStatus().get_credentials()
 
         self.out = Out(
             max_node_name=max_node_name,
@@ -124,6 +130,17 @@ class TrixStatus(object):
 
         if 'luna' in self.checks:
             checks.append(LunaStatus(node=node))
+
+        if 'zabbix' in self.checks:
+            checks.append(
+                ZabbixStatus(
+                    node=node,
+                    hostname=node_dict['hostname'],
+                    timeout=self.timeout,
+                    username=self.zabbix_creds[0],
+                    password=self.zabbix_creds[1]
+                )
+            )
 
         thread_pool = ThreadPool(processes=5)
         self.log.debug('{}:Map check workers to threads'.format(node))
