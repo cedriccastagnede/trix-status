@@ -1,6 +1,5 @@
 import utils
-from out import colors
-from nodestatus import NodeStatus
+from nodestatus import NodeStatus, category
 
 class SlurmStatus(NodeStatus):
 
@@ -13,7 +12,7 @@ class SlurmStatus(NodeStatus):
         self.answer = {
             'check': 'slurm',
             'status': 'UNKN',
-            'color': colors.RED,
+            'category': category.UNKN,
             'checks': [],
             'failed check': '',
             'details': ''
@@ -35,13 +34,13 @@ class SlurmStatus(NodeStatus):
         error_tags = ["*", "~", "#", "$", "@"]
 
         if status.upper() in idle_statuses:
-            self.answer['color'] = colors.GREEN
+            self.answer['category'] = category.GOOD
 
         if status.upper() in working_statuses:
-            self.answer['color'] = colors.YELLOW
+            self.answer['category'] = category.BUSY
 
         if len(status) > 1 and status[-1] in error_tags:
-            self.answer['color'] = colors.RED
+            self.answer['category'] = category.ERROR
 
         return self.answer
 

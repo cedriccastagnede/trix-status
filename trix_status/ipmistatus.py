@@ -18,8 +18,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import socket
 
-from out import colors
-from nodestatus import NodeStatus
+from nodestatus import NodeStatus, category
 
 
 class IPMIStatus(NodeStatus):
@@ -90,7 +89,7 @@ class IPMIStatus(NodeStatus):
         self.answer = {
             'check': 'ipmi',
             'status': 'UNKN',
-            'color': colors.RED,
+            'category': category.UNKN,
             'checks': [],
             'failed check': '',
             'details': ''
@@ -108,16 +107,16 @@ class IPMIStatus(NodeStatus):
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
 
-        self.answer['color'] = colors.CYAN
+        self.answer['category'] = category.WARN
 
         if not self.check_power():
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
 
         if self.answer['status'] == 'ON':
-            self.answer['color'] = colors.GREEN
+            self.answer['category'] = category.GOOD
 
         if self.answer['status'] == 'OFF':
-            self.answer['color'] = colors.RED
+            self.answer['category'] = category.DOWN
 
         return self.answer

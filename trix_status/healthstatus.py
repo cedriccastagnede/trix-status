@@ -20,8 +20,7 @@ from multiprocessing.pool import ThreadPool
 import socket
 import time
 
-from out import colors
-from nodestatus import NodeStatus
+from nodestatus import NodeStatus, category
 
 
 class HealthStatus(NodeStatus):
@@ -191,7 +190,7 @@ class HealthStatus(NodeStatus):
         self.answer = {
             'check': 'health',
             'status': 'UNKN',
-            'color': colors.RED,
+            'category': category.UNKN,
             'checks': [],
             'failed check': '',
             'details': ''
@@ -211,14 +210,14 @@ class HealthStatus(NodeStatus):
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
 
-        self.answer['color'] = colors.CYAN
+        self.answer['category'] = category.DOWN
 
         if not self.check_ssh():
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
 
         self.answer['status'] = 'AVAIL'
-        self.answer['color'] = colors.YELLOW
+        self.answer['category'] = category.WARN
 
         if not self.check_mounts():
             self.answer['failed check'] = self.answer['checks'][-1]
@@ -226,6 +225,6 @@ class HealthStatus(NodeStatus):
             return self.answer
 
         self.answer['status'] = 'OK'
-        self.answer['color'] = colors.GREEN
+        self.answer['category'] = category.GOOD
 
         return self.answer

@@ -22,8 +22,20 @@ from multiprocessing.pool import ThreadPool
 from abc import ABCMeta, abstractmethod
 
 
+class category:
+    # red
+    UNKN = 0
+    DOWN = 1
+    ERROR = 2
+    # yellow
+    WARN = 3
+    BUSY = 4
+    # green
+    GOOD = 5
+
 
 class NodeStatus(object):
+
 
     __metaclass__ = ABCMeta
 

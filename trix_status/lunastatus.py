@@ -1,6 +1,5 @@
 import luna
-from out import colors
-from nodestatus import NodeStatus
+from nodestatus import NodeStatus, category
 
 class LunaStatus(NodeStatus):
 
@@ -11,7 +10,7 @@ class LunaStatus(NodeStatus):
         self.answer = {
             'check': 'luna',
             'status': 'UNKN',
-            'color': colors.RED,
+            'category': category.UNKN,
             'checks': [],
             'failed check': '',
             'details': ''
@@ -23,8 +22,8 @@ class LunaStatus(NodeStatus):
         status = node_status['status']
         self.answer['status'] = status
         if status == "install.success":
-            self.answer['color'] = colors.GREEN
+            self.answer['category'] = category.GOOD
         else:
-            self.answer['color'] = colors.YELLOW
+            self.answer['category'] = category.BUSY
         return self.answer
 

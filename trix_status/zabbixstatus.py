@@ -14,10 +14,9 @@ You should have received a copy of the GNU General Public License
 along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from nodestatus import NodeStatus
+from nodestatus import NodeStatus, category
 import os
 import config
-from out import colors
 import logging
 import json
 import urllib2
@@ -188,7 +187,7 @@ class ZabbixStatus(NodeStatus):
         self.answer = {
             'check': 'zabbix',
             'status': 'UNKN',
-            'color': colors.RED,
+            'category': category.UNKN,
             'checks': [],
             'failed check': '',
             'details': ''
@@ -213,16 +212,16 @@ class ZabbixStatus(NodeStatus):
         max_event_priority = self.get_events(token, hostid)
 
         if max_event_priority > 2:
-            self.answer["color"] = colors.RED
+            self.answer["category"] = category.ERROR
             self.answer["status"] = "ERR"
             return self.answer
 
         if max_event_priority > 1:
-            self.answer["color"] = colors.YELLOW
+            self.answer["category"] = category.WARN
             self.answer["status"] = "WARN"
             return self.answer
 
-        self.answer["color"] = colors.GREEN
+        self.answer["category"] = category.GOOD
         self.answer["status"] = "OK"
 
         return self.answer

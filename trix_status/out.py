@@ -19,6 +19,8 @@ import logging
 import sys
 import config
 
+from nodestatus import category
+
 
 class colors:
     RED = "\033[31m"
@@ -33,6 +35,16 @@ class colors:
     BGLIGHGRAY = "\033[47m"
     BGBLACK = "\033[40m"
     BGDEFAULT = "\033[49m"
+
+color_scheme = {
+    category.UNKN:  colors.RED,
+    category.DOWN:  colors.RED,
+    category.ERROR: colors.RED,
+    category.WARN:  colors.YELLOW,
+    category.BUSY:  colors.YELLOW,
+    category.GOOD:  colors.GREEN
+}
+
 
 class Out(object):
 
@@ -135,7 +147,9 @@ class Out(object):
             if fields[elem]['failed check']:
                 failed_check = "({})".format(fields[elem]['failed check'])
 
-            color = fields[elem]['color']
+            color = color_scheme[
+                fields[elem]['category']
+            ]
 
             status_len = len(node_status) + len(failed_check)
             out_status = node_status + failed_check
