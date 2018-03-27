@@ -189,6 +189,24 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--show-only-green", "-G", action="store_true",
+        default=False,
+        help="Show only node in good condition"
+    )
+
+    parser.add_argument(
+        "--show-only-non-green", "-E", action="store_true",
+        default=False,
+        help="Show only bad behaving nodes"
+    )
+
+    parser.add_argument(
+        "--cast-unkn-as-good", "-U", action="store_true",
+        default=False,
+        help="Do not consider status UNKN as error"
+    )
+
+    parser.add_argument(
         "--status-column", "-S", type=int, default=15,
         help="Width of status column"
     )

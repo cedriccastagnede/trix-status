@@ -23,6 +23,7 @@ from nodestatus import category
 
 
 class colors:
+    NONE = None
     RED = "\033[31m"
     LIGHTRED = "\033[91m"
     YELLOW = "\033[33m"
@@ -36,13 +37,19 @@ class colors:
     BGBLACK = "\033[40m"
     BGDEFAULT = "\033[49m"
 
-color_scheme = {
-    category.UNKN:  colors.RED,
-    category.DOWN:  colors.RED,
-    category.ERROR: colors.RED,
-    category.WARN:  colors.YELLOW,
-    category.BUSY:  colors.YELLOW,
-    category.GOOD:  colors.GREEN
+default_color_categories = {
+    category.UNKN:  'ERR',
+    category.DOWN:  'ERR',
+    category.ERROR: 'ERR',
+    category.WARN:  'WARN',
+    category.BUSY:  'WARN',
+    category.GOOD:  'GOOD',
+}
+
+default_color_scheme = {
+    'ERR':   colors.RED,
+    'WARN':  colors.YELLOW,
+    'GOOD':  colors.GREEN,
 }
 
 
@@ -60,6 +67,13 @@ class Out(object):
         self.verbose = args.verbose
         self.column_names = args.checks
         self.no_statusbar = args.no_statusbar
+
+        self.show_only_non_green = args.show_only_non_green
+
+        (
+            self.color_categories,
+            self.cat2colors
+        ) = self._convert_categories_to_colors(args)
 
         self.spaces = 2
 
@@ -89,6 +103,22 @@ class Out(object):
                 ["-" * (i + spaces) for i in self.lengths]
             )
             + "+"
+        )
+
+    def _convert_categories_to_colors(self, args):
+        color_categories = default_color_categories.copy()
+        if args.cast_unkn_as_good:
+            color_categories[category.UNKN] = 'GOOD'
+
+        color_scheme = default_color_scheme.copy()
+
+        if args.show_only_green:
+            color_scheme['ERR'] = colors.NONE
+            color_scheme['WARN'] = colors.NONE
+
+        return (
+            color_categories,
+            {k: color_scheme[v] for k, v in color_categories.items()}
         )
 
     def separator(self):
@@ -139,6 +169,8 @@ class Out(object):
         out += node.ljust(self.max_node_name)
         out += " " * self.spaces + self.col_sep
 
+        skip = True
+
         for elem in self.column_names:
 
             node_status = fields[elem]['status']
@@ -147,9 +179,19 @@ class Out(object):
             if fields[elem]['failed check']:
                 failed_check = "({})".format(fields[elem]['failed check'])
 
-            color = color_scheme[
-                fields[elem]['category']
-            ]
+            cat = fields[elem]['category']
+            if self.show_only_non_green:
+                if self.color_categories[cat] == 'GOOD':
+                    skip &= True
+                else:
+                    skip &= False
+            else:
+                skip = False
+
+            color = self.cat2colors[cat]
+
+            if color is colors.NONE:
+                return
 
             status_len = len(node_status) + len(failed_check)
             out_status = node_status + failed_check
@@ -196,7 +238,8 @@ class Out(object):
 
             out += self.col_sep
 
-        print(out)
+        if not skip:
+            print(out)
 
     def statusbar(self, update=True):
         if self.no_statusbar:
@@ -209,7 +252,7 @@ class Out(object):
         nbars = int((progress_perc/100)*width)
         out += " ["
         out += "#" * nbars
-        out +=  " " * (width - nbars)
+        out += " " * (width - nbars)
         out += "]"
         sys.stdout.write(out)
         sys.stdout.write('\r')
