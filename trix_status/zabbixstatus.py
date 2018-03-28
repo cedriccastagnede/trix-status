@@ -14,7 +14,8 @@ You should have received a copy of the GNU General Public License
 along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from nodestatus import NodeStatus, category
+from config import category
+from nodestatus import NodeStatus
 import os
 import config
 import logging

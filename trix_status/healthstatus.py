@@ -20,7 +20,8 @@ from multiprocessing.pool import ThreadPool
 import socket
 import time
 
-from nodestatus import NodeStatus, category
+from config import category
+from nodestatus import NodeStatus
 
 
 class HealthStatus(NodeStatus):

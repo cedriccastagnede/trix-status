@@ -20,18 +20,7 @@ import subprocess as sp
 import utils
 from multiprocessing.pool import ThreadPool
 from abc import ABCMeta, abstractmethod
-
-
-class category:
-    # red
-    UNKN = 0
-    DOWN = 1
-    ERROR = 2
-    # yellow
-    WARN = 3
-    BUSY = 4
-    # green
-    GOOD = 5
+from config import category
 
 
 class NodeStatus(object):

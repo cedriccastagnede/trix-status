@@ -19,38 +19,8 @@ import logging
 import sys
 import config
 
-from nodestatus import category
-
-
-class colors:
-    NONE = None
-    RED = "\033[31m"
-    LIGHTRED = "\033[91m"
-    YELLOW = "\033[33m"
-    LIGHTYELLOW = "\033[93m"
-    CYAN = "\033[36m"
-    LIGHTCYAN = "\033[96m"
-    GREEN = "\033[32m"
-    LIGHTGREEN = "\033[92m"
-    DEFAULT = "\033[39m"
-    BGLIGHGRAY = "\033[47m"
-    BGBLACK = "\033[40m"
-    BGDEFAULT = "\033[49m"
-
-default_color_categories = {
-    category.UNKN:  'ERR',
-    category.DOWN:  'ERR',
-    category.ERROR: 'ERR',
-    category.WARN:  'WARN',
-    category.BUSY:  'WARN',
-    category.GOOD:  'GOOD',
-}
-
-default_color_scheme = {
-    'ERR':   colors.RED,
-    'WARN':  colors.YELLOW,
-    'GOOD':  colors.GREEN,
-}
+from config import category, colors
+from config import default_color_mapping, default_color_scheme
 
 
 class Out(object):
@@ -71,7 +41,7 @@ class Out(object):
         self.show_only_non_green = args.show_only_non_green
 
         (
-            self.color_categories,
+            self.color_mapping,
             self.cat2colors
         ) = self._convert_categories_to_colors(args)
 
@@ -106,9 +76,9 @@ class Out(object):
         )
 
     def _convert_categories_to_colors(self, args):
-        color_categories = default_color_categories.copy()
+        color_mapping = default_color_mapping.copy()
         if args.cast_unkn_as_good:
-            color_categories[category.UNKN] = 'GOOD'
+            color_mapping[category.UNKN] = 'GOOD'
 
         color_scheme = default_color_scheme.copy()
 
@@ -117,8 +87,8 @@ class Out(object):
             color_scheme['WARN'] = colors.NONE
 
         return (
-            color_categories,
-            {k: color_scheme[v] for k, v in color_categories.items()}
+            color_mapping,
+            {k: color_scheme[v] for k, v in color_mapping.items()}
         )
 
     def separator(self):
@@ -181,7 +151,7 @@ class Out(object):
 
             cat = fields[elem]['category']
             if self.show_only_non_green:
-                if self.color_categories[cat] == 'GOOD':
+                if self.color_mapping[cat] == 'GOOD':
                     skip &= True
                 else:
                     skip &= False
