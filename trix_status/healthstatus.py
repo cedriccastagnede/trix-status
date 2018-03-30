@@ -19,10 +19,11 @@ import subprocess as sp
 from multiprocessing.pool import ThreadPool
 import socket
 import time
+import hostlist
 
 from config import category
 from nodestatus import NodeStatus
-
+from utils import get_config
 
 class HealthStatus(NodeStatus):
 
@@ -93,10 +94,7 @@ class HealthStatus(NodeStatus):
         self.tagged_log_debug("Check ssh rc = {}".format(rc))
         return not rc
 
-    def check_mounts(self):
-        self.tagged_log_debug("Check if node have healthy mountpoints")
-        self.answer['checks'].append('mounts')
-
+    def _discover_mountpoints(self):
         # get mountpoints
         cmd = (
             "ssh -o ConnectTimeout={} -o StrictHostKeyChecking=no {} "
@@ -104,7 +102,7 @@ class HealthStatus(NodeStatus):
         ).format(self.timeout, self.node)
         rc, stdout, stdout_lines, stderr = self.cmd(cmd)
         if rc:
-            return not rc
+            return []
         fs_mounts = []
         standart_mounts = ['-.mount', 'run-user-0.mount']
         for line in stdout_lines:
@@ -113,9 +111,36 @@ class HealthStatus(NodeStatus):
             if fs[0] == '/' and unit_name not in standart_mounts:
                 fs_mounts.append(fs)
 
-        self.tagged_log_debug(
-            "Discovered mounts: {}".format(fs_mounts)
-        )
+        return fs_mounts
+
+    def _get_mountfs_from_confg(self):
+        config = get_config('health', {'mounts': []})
+        fs_mounts = []
+        config = config['mounts']
+        for hostexpr, mps in config.items():
+            hosts = hostlist.expand_hostlist(hostexpr)
+            if self.node in hosts:
+                fs_mounts.extend(mps)
+        return fs_mounts
+
+    def check_mounts(self):
+        self.tagged_log_debug("Check if node have healthy mountpoints")
+        self.answer['checks'].append('mounts')
+
+        try:
+            fs_mounts = self._get_mountfs_from_confg()
+        except Exception:
+            fs_mounts = []
+
+        if not fs_mounts:
+            fs_mounts = self._discover_mountpoints()
+
+            self.tagged_log_debug(
+                "Discovered mounts: {}".format(fs_mounts)
+            )
+
+        if not fs_mounts:
+            return False
 
         thread_pool = ThreadPool(10)
 
@@ -129,14 +154,15 @@ class HealthStatus(NodeStatus):
             "Returned from mount workers: '{}'".format(workers_return)
         )
         broken_fs = []
+        error = False
         for fs, details, status_ok in workers_return:
             if not status_ok:
-                rc = 1
+                error = True
                 broken_fs.append(fs)
         if broken_fs:
             self.answer['details'] = "FAIL:" + ",".join(broken_fs)
 
-        return not rc
+        return not error
 
     def mount_worker(self, fs):
 
