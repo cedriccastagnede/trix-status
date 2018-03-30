@@ -52,6 +52,8 @@ done
 # README and LICENSE files
 %{__install} -m 644 -D LICENSE                                  %{buildroot}%{_defaultdocdir}/%{name}-%{version}-%{build_ver}/LICENSE
 %{__install} -m 644 -D README.md                                %{buildroot}%{_defaultdocdir}/%{name}-%{version}-%{build_ver}/README.md
+# config
+%{__install} -m 640 -D trix-status.conf                         %{buildroot}%{_sysconfdir}/trinity/trix-status.conf
 
 # ///////////////////////////////////////////////
 # CLEAN SECTION
@@ -76,6 +78,7 @@ rm -rf %{buildroot}
 %{python_sitelib}/trix_status/*.py
 %exclude %{python_sitelib}/trix_status/*.pyc
 %exclude %{python_sitelib}/trix_status/*.pyo
+%config(noreplace) %attr(0600, root, root) %{_sysconfdir}/trinity/trix-status.conf
 %doc %{_defaultdocdir}/%{name}-%{version}-%{build_ver}
 
 # ///////////////////////////////////////////////
