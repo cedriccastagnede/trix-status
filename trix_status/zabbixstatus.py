@@ -16,13 +16,16 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 from config import category
 from nodestatus import NodeStatus
+from utils import get_config
 import os
+import yaml
 import config
 import logging
 import json
 import urllib2
 
 default_username = "Admin"
+default_password = "zabbix"
 trinity_password_file = "/etc/trinity/passwords/zabbix/admin.txt"
 z_url = "http://localhost/zabbix/api_jsonrpc.php"
 
@@ -44,19 +47,32 @@ class ZabbixStatus(NodeStatus):
             self.hostname = node
         else:
             self.hostname = hostname
-        self.z_url = z_url
+        conf = {'url': z_url}
+        conf = get_config('zabbix', conf)
+        self.z_url = conf['url']
 
 
     def get_credentials(self):
         if self.username is not None and self.password is not None:
             return self.username, self.password
-        if os.path.isfile(trinity_password_file):
-            with open(trinity_password_file) as f:
-                self.username = default_username
-                self.password = f.readline().strip()
-        if os.path.isfile(config.config_file):
-            with open(config.config_file) as f:
-                pass
+        creds = {
+            'password_file': trinity_password_file,
+            'username': default_username,
+        }
+        # overwrite default creds from above
+        creds = get_config('zabbix', creds)
+        if os.path.isfile(creds['password_file']):
+            with open(creds['password_file']) as f:
+                creds['password'] = f.readline().strip()
+        else:
+            creds['password'] = default_password
+
+        # overwrite password from config
+        creds = get_config('zabbix', creds)
+
+        self.username = creds['username']
+        self.password = creds['password']
+
         return self.username, self.password
 
     def _do_request(self, j):
@@ -73,7 +89,7 @@ class ZabbixStatus(NodeStatus):
             r = json.loads(r)
         except Exception as exc:
             self.tagged_log_debug(exc)
-            return False, msg
+            return False, str(exc)
 
         if not r:
             msg = (

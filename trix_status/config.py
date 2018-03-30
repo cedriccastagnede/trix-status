@@ -23,7 +23,7 @@ available_checks = {
     "zabbix":   "Zabbix",
 }
 
-config_file = "/etc/trix-status.conf"
+config_file = "/etc/trinity/trix-status.conf"
 
 class category:
     # red

@@ -19,6 +19,8 @@ import argparse
 import logging
 import subprocess as sp
 import config
+import yaml
+import os
 
 luna_present = True
 try:
@@ -35,9 +37,9 @@ except ImportError:
 if luna_present and luna.__version__ != '1.2':
     luna_present = False
 
+log = logging.getLogger("trix-status")
 
 def get_nodes(group=None, nodelist=None):
-    log = logging.getLogger("trix-status")
     if not luna_present:
         log.error("Luna 1.2 is not installed")
         return []
@@ -150,6 +152,21 @@ def parse_arguments():
 
         return ret
 
+    defaults = {
+        'fanout': 10,
+        'timeout': 10,
+        'show_only_green': False,
+        'show_only_non_green': False,
+        'cast_unkn_as_good': False,
+        'status_column': 15,
+        'details_column': 30,
+        'no_table': False,
+        'no_statusbar': False,
+        'verbose': False,
+    }
+
+    defaults = get_config('cli', defaults)
+
     parser = argparse.ArgumentParser(
         description="""
         Show status of nodes and controllers for TrinityX cluster
@@ -179,40 +196,44 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--fanout", "-w", type=int, default=10,
+        "--fanout", "-w", type=int,
+        default=defaults['fanout'],
         help="Number of checks running simultaneously"
     )
 
     parser.add_argument(
-        "--timeout", "-t", type=int, default=10,
+        "--timeout", "-t", type=int,
+        default=defaults['timeout'],
         help="Timeout for running checks"
     )
 
     parser.add_argument(
         "--show-only-green", "-G", action="store_true",
-        default=False,
+        default=defaults['show_only_green'],
         help="Show only node in good condition"
     )
 
     parser.add_argument(
         "--show-only-non-green", "-E", action="store_true",
-        default=False,
+        default=defaults['show_only_non_green'],
         help="Show only bad behaving nodes"
     )
 
     parser.add_argument(
         "--cast-unkn-as-good", "-U", action="store_true",
-        default=False,
+        default=defaults['cast_unkn_as_good'],
         help="Do not consider status UNKN as error"
     )
 
     parser.add_argument(
-        "--status-column", "-S", type=int, default=15,
+        "--status-column", "-S", type=int,
+        default=defaults['status_column'],
         help="Width of status column"
     )
 
     parser.add_argument(
-        "--details-column", "-D", type=int, default=30,
+        "--details-column", "-D", type=int,
+        default=defaults['details_column'],
         help="Width of details' column"
     )
 
@@ -223,16 +244,19 @@ def parse_arguments():
 
     parser.add_argument(
         "--no-table", action="store_true",
+        default=defaults['no_table'],
         help="Disable ASCII graphics"
     )
 
     parser.add_argument(
         "--no-statusbar", action="store_true",
+        default=defaults['no_statusbar'],
         help="Disable statusbar"
     )
 
     parser.add_argument(
         "--verbose", "-v", action="store_true",
+        default=defaults['verbose'],
         help="Show details of failed checks"
     )
 
@@ -243,3 +267,34 @@ def parse_arguments():
 
     args = parser.parse_args()
     return args
+
+
+def get_config(section=None, variables={}):
+    if not isinstance(variables, dict):
+        variables = {}
+    if not os.path.isfile(config.config_file):
+        return variables
+
+    yaml_config ={}
+
+    with open(config.config_file) as f:
+        try:
+            yaml_config = yaml.load(f)
+        except yaml.scanner.ScannerError, yaml.YAMLError:
+            log.error("Error parsing config file")
+            return variables
+
+    if yaml_config is None or section not in yaml_config:
+        return variables
+
+    if section:
+        yaml_config = yaml_config[section]
+
+    if variables == {}:
+        return yaml_config
+
+    for k in variables.keys():
+        if k in yaml_config:
+            variables[k] = yaml_config[k]
+
+    return variables
