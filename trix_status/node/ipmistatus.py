@@ -18,7 +18,8 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import socket
 
-from nodestatus import NodeStatus, category
+from nodestatus import NodeStatus
+from trix_status.config import category
 
 
 class IPMIStatus(NodeStatus):
@@ -36,8 +37,6 @@ class IPMIStatus(NodeStatus):
         self.answer['checks'].append('config')
 
         return (self.ip and self.username and self.password)
-
-
 
     def check_udp_ping(self):
         self.answer['checks'].append('udp_ping')

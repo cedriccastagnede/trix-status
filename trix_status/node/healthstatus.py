@@ -21,9 +21,10 @@ import socket
 import time
 import hostlist
 
-from config import category
+from trix_status.config import category
 from nodestatus import NodeStatus
-from utils import get_config
+from trix_status.utils import get_config
+
 
 class HealthStatus(NodeStatus):
 

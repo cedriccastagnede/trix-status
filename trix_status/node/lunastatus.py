@@ -15,8 +15,9 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import luna
-from config import category
+from trix_status.config import category
 from nodestatus import NodeStatus
+
 
 class LunaStatus(NodeStatus):
 
@@ -43,4 +44,3 @@ class LunaStatus(NodeStatus):
         else:
             self.answer['category'] = category.BUSY
         return self.answer
-

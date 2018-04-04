@@ -14,12 +14,10 @@ You should have received a copy of the GNU General Public License
 along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from config import category
+from trix_status.config import category
 from nodestatus import NodeStatus
-from utils import get_config
+from trix_status.utils import get_config
 import os
-import yaml
-import config
 import logging
 import json
 import urllib2
@@ -29,8 +27,10 @@ default_password = "zabbix"
 trinity_password_file = "/etc/trinity/passwords/zabbix/admin.txt"
 z_url = "http://localhost/zabbix/api_jsonrpc.php"
 
+
 def print_json(j):
     print json.dumps(j, indent=4, sort_keys=True)
+
 
 class ZabbixStatus(NodeStatus):
 
@@ -50,7 +50,6 @@ class ZabbixStatus(NodeStatus):
         conf = {'url': z_url}
         conf = get_config('zabbix', conf)
         self.z_url = conf['url']
-
 
     def get_credentials(self):
         if self.username is not None and self.password is not None:
@@ -195,8 +194,8 @@ class ZabbixStatus(NodeStatus):
         }
         z_answer = self.do_request(j)
         self.tagged_log_debug("Triggers for node: {}".format(z_answer))
-        self.answer["details"] =  " / ".join(
-            [e["description"] for e in z_answer ]
+        self.answer["details"] = " / ".join(
+            [e["description"] for e in z_answer]
         )
         return int(z_answer[0]["priority"])
 
@@ -242,4 +241,3 @@ class ZabbixStatus(NodeStatus):
         self.answer["status"] = "OK"
 
         return self.answer
-

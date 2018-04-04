@@ -15,8 +15,8 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
-import utils
-from config import category
+from trix_status import utils
+from trix_status.config import category
 from nodestatus import NodeStatus
 
 class SlurmStatus(NodeStatus):

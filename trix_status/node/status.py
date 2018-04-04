@@ -19,7 +19,7 @@ import logging
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 
-from out import Out
+from trix_status.out import Out
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
 from slurmstatus import SlurmStatus

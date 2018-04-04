@@ -16,15 +16,11 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 
 
 import logging
-import subprocess as sp
-import utils
-from multiprocessing.pool import ThreadPool
+from trix_status import utils
 from abc import ABCMeta, abstractmethod
-from config import category
 
 
 class NodeStatus(object):
-
 
     __metaclass__ = ABCMeta
 

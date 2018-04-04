@@ -19,7 +19,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
 from trix_status import utils
-from trix_status import TrixStatus
+from trix_status import node
 
 if __name__ == "__main__":
     arguments = utils.parse_arguments()
@@ -30,6 +30,6 @@ if __name__ == "__main__":
         arguments.group, arguments.nodes)
 
     try:
-        TrixStatus(nodes, arguments).get()
+        node.TrixStatus(nodes, arguments).get()
     except KeyboardInterrupt:
         log.info('KeyboardInterrupt. Canceled')
