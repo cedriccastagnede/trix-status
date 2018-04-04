@@ -45,8 +45,10 @@ Small heath-checker for SLURM
 # Executable
 %{__install} -m 755 -D trix-status                              %{buildroot}%{_sbindir}/trix-status
 # Modules
-%{__install} -m 755 -d trix_status                              %{buildroot}%{python_sitelib}/trix_status
-for f in trix_status/*.py; do
+for d in trix_status trix_status/nodes trix_status/controllers; do
+    %{__install} -m 755 -d $d                              %{buildroot}%{python_sitelib}/$d
+done
+for f in trix_status/*/*.py trix_status/*.py; do
     %{__install} -m 644 $f                                      %{buildroot}%{python_sitelib}/$f
 done
 # README and LICENSE files
@@ -65,6 +67,8 @@ rm -rf %{buildroot}
 # PRE REMOVE PHASE MAIN
 # ///////////////////////////////////////////////
 %preun
+%{_bindir}/rm -rf %{python_sitelib}/trix_status/*/*.pyc
+%{_bindir}/rm -rf %{python_sitelib}/trix_status/*/*.pyo
 %{_bindir}/rm -rf %{python_sitelib}/trix_status/*.pyc
 %{_bindir}/rm -rf %{python_sitelib}/trix_status/*.pyo
 
@@ -76,6 +80,9 @@ rm -rf %{buildroot}
 %{_sbindir}/trix-status
 %dir %{python_sitelib}/trix_status
 %{python_sitelib}/trix_status/*.py
+%{python_sitelib}/trix_status/*/*.py
+%exclude %{python_sitelib}/trix_status/*/*.pyc
+%exclude %{python_sitelib}/trix_status/*/*.pyo
 %exclude %{python_sitelib}/trix_status/*.pyc
 %exclude %{python_sitelib}/trix_status/*.pyo
 %config(noreplace) %attr(0600, root, root) %{_sysconfdir}/trinity/trix-status.conf

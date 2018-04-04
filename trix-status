@@ -17,19 +17,27 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-
-from trix_status import utils
-from trix_status import node
+import sys
+from trix_status.utils import parse_arguments
 
 if __name__ == "__main__":
-    arguments = utils.parse_arguments()
+    arguments = parse_arguments()
     log = logging.getLogger('trix_status')
     log.setLevel(arguments.loglevel)
 
-    nodes = utils.get_nodes(
-        arguments.group, arguments.nodes)
+    subj = None
+
+    if arguments.nodes:
+        from trix_status import nodes as subj
+
+    if arguments.controllers:
+        from trix_status import controllers as subj
+
+    if subj is None:
+        log.error("No subject to check was specified")
+        sys.exit(255)
 
     try:
-        node.TrixStatus(nodes, arguments).get()
+        subj.Status(arguments).get()
     except KeyboardInterrupt:
         log.info('KeyboardInterrupt. Canceled')

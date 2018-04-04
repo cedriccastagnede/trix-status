@@ -22,87 +22,7 @@ import config
 import yaml
 import os
 
-luna_present = True
-try:
-    import luna
-except ImportError:
-    luna_present = False
-
-hostlist_present = True
-try:
-    import hostlist
-except ImportError:
-    hostlist_present = False
-
-if luna_present and luna.__version__ != '1.2':
-    luna_present = False
-
 log = logging.getLogger("trix-status")
-
-def get_nodes(group=None, nodelist=None):
-    if not luna_present:
-        log.error("Luna 1.2 is not installed")
-        return []
-    nodes = []
-    av_groups = luna.list('group')
-    if group is None:
-        groups = av_groups
-    else:
-        if group not in av_groups:
-            log.error("No such group '{}'".format(group))
-            return []
-        groups = [group]
-
-    for group_name in groups:
-        group = luna.Group(group_name)
-        domain = group.boot_params['domain']
-        group_nodes = group.list_nodes()
-        sorted_keys = group_nodes.keys()
-        sorted_keys.sort()
-        ipmi_username = ''
-        ipmi_password = ''
-
-        if 'bmcsetup' in group.install_params:
-            bmcsetup = group.install_params['bmcsetup']
-            if 'user' in bmcsetup:
-                ipmi_username = bmcsetup['user']
-            if 'password' in bmcsetup:
-                ipmi_password = bmcsetup['password']
-
-        for node_name in sorted_keys:
-            node_dict = transform_node_dict(group_nodes, node_name)
-            node_dict['ipmi_username'] = ipmi_username
-            node_dict['ipmi_password'] = ipmi_password
-            node_dict['hostname'] = node_name
-            if domain:
-                node_dict['hostname'] += "." + domain
-            nodes.append(node_dict)
-
-    if not nodelist:
-        return nodes
-
-    nodelist = ",".join(nodelist)
-
-    if not hostlist_present:
-        log.info(
-            "hostlist is not installed. List of nodes will not be expanded")
-        nodelist = nodelist.split(",")
-    else:
-        nodelist = hostlist.expand_hostlist(nodelist)
-
-    return filter(lambda x: x['node'] in nodelist, nodes)
-
-
-def transform_node_dict(nodes, node):
-    node_dict = nodes[node]
-    ret_dict = {'node': node, 'BOOTIF': '', 'BMC': ''}
-    if 'interfaces' in node_dict:
-        if 'BOOTIF' in node_dict['interfaces']:
-            ret_dict['BOOTIF'] = node_dict['interfaces']['BOOTIF'][4]
-        if 'BMC' in node_dict['interfaces']:
-            ret_dict['BMC'] = node_dict['interfaces']['BMC'][4]
-
-    return ret_dict
 
 
 def run_cmd(cmd):
@@ -173,6 +93,19 @@ def parse_arguments():
         """
     )
 
+    check_type = parser.add_mutually_exclusive_group()
+    check_type.add_argument(
+        '--nodes', '-N', action="store_true",
+        help="Check nodes (default)",
+        default=True
+    )
+
+    check_type.add_argument(
+        '--controllers', '-C', action="store_true",
+        help="Check controllers",
+        default=False
+    )
+
     parser.add_argument(
         "--sorted-output", "-s", action="store_true",
         help="Sort output by node name"
@@ -184,7 +117,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "nodes", nargs="*",
+        "hosts", nargs="*",
         help="Check only following nodes. Hostlist expressions are supported"
     )
 
@@ -275,7 +208,7 @@ def get_config(section=None, variables={}):
     if not os.path.isfile(config.config_file):
         return variables
 
-    yaml_config ={}
+    yaml_config = {}
 
     with open(config.config_file) as f:
         try:

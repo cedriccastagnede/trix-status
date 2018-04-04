@@ -15,6 +15,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
+from trix_status import AbstractStatus
 import logging
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
@@ -27,11 +28,27 @@ from lunastatus import LunaStatus
 from zabbixstatus import ZabbixStatus
 
 
-class TrixStatus(object):
+luna_present = True
+try:
+    import luna
+except ImportError:
+    luna_present = False
 
-    def __init__(self, nodes, args):
+hostlist_present = True
+try:
+    import hostlist
+except ImportError:
+    hostlist_present = False
 
-        self.nodes = nodes
+if luna_present and luna.__version__ != '1.2':
+    luna_present = False
+
+
+class Status(AbstractStatus):
+
+    def __init__(self, args):
+
+        self.nodes = self._get_nodes(args.group, args.hosts)
         self.args = args
 
         self.fanout = args.fanout
@@ -41,6 +58,71 @@ class TrixStatus(object):
 
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
+
+    def _get_nodes(self, group=None, nodelist=None):
+
+        def transform_node_dict(nodes, node):
+            node_dict = nodes[node]
+            ret_dict = {'node': node, 'BOOTIF': '', 'BMC': ''}
+            if 'interfaces' in node_dict:
+                if 'BOOTIF' in node_dict['interfaces']:
+                    ret_dict['BOOTIF'] = node_dict['interfaces']['BOOTIF'][4]
+                if 'BMC' in node_dict['interfaces']:
+                    ret_dict['BMC'] = node_dict['interfaces']['BMC'][4]
+
+            return ret_dict
+
+        if not luna_present:
+            log.error("Luna 1.2 is not installed")
+            return []
+        nodes = []
+        av_groups = luna.list('group')
+        if group is None:
+            groups = av_groups
+        else:
+            if group not in av_groups:
+                self.log.error("No such group '{}'".format(group))
+                return []
+            groups = [group]
+
+        for group_name in groups:
+            group = luna.Group(group_name)
+            domain = group.boot_params['domain']
+            group_nodes = group.list_nodes()
+            sorted_keys = group_nodes.keys()
+            sorted_keys.sort()
+            ipmi_username = ''
+            ipmi_password = ''
+
+            if 'bmcsetup' in group.install_params:
+                bmcsetup = group.install_params['bmcsetup']
+                if 'user' in bmcsetup:
+                    ipmi_username = bmcsetup['user']
+                if 'password' in bmcsetup:
+                    ipmi_password = bmcsetup['password']
+
+            for node_name in sorted_keys:
+                node_dict = transform_node_dict(group_nodes, node_name)
+                node_dict['ipmi_username'] = ipmi_username
+                node_dict['ipmi_password'] = ipmi_password
+                node_dict['hostname'] = node_name
+                if domain:
+                    node_dict['hostname'] += "." + domain
+                nodes.append(node_dict)
+
+        if not nodelist:
+            return nodes
+
+        nodelist = ",".join(nodelist)
+
+        if not hostlist_present:
+            self.log.info(
+                "hostlist is not installed. List of nodes will not be expanded")
+            nodelist = nodelist.split(",")
+        else:
+            nodelist = hostlist.expand_hostlist(nodelist)
+
+        return filter(lambda x: x['node'] in nodelist, nodes)
 
     def get(self):
         if self.nodes == []:
