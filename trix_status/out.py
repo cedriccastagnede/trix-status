@@ -25,7 +25,8 @@ from config import default_color_mapping, default_color_scheme
 
 class Out(object):
 
-    def __init__(self, max_node_name, total, args, spaces=4):
+    def __init__(self, max_node_name, total, args,
+                 index_col='', columns=[], spaces=4):
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
 
@@ -35,7 +36,8 @@ class Out(object):
         self.done = 0
         self.total = total
         self.verbose = args.verbose
-        self.column_names = args.checks
+        self.index_col = index_col or ''
+        self.column_names = columns or []
         self.no_statusbar = args.no_statusbar
 
         self.show_only_non_green = args.show_only_non_green
@@ -97,13 +99,14 @@ class Out(object):
 
     def header(self):
         self.separator()
-        first_col = "Node"
+        first_col = self.index_col
         out = self.col_sep + " " * self.spaces
         out += first_col[:self.max_node_name].ljust(self.max_node_name)
         out += " " * self.spaces + self.col_sep
         for elem in self.column_names:
 
-            col_name = config.available_checks[elem]
+            #col_name = config.available_checks[elem]
+            col_name = elem['column']
             out += " " * self.spaces
             out += col_name.ljust(self.status_col)
             out += " " * self.spaces
@@ -122,17 +125,19 @@ class Out(object):
     def line(self, node, json):
         fields = {}
 
+        column_keys = [e['key'] for e in self.column_names]
+
         for elem in json:
-            if 'check' not in elem or elem['check'] not in self.column_names:
+            if 'check' not in elem or elem['check'] not in column_keys:
                 self.log.debug("Fields does not match")
                 return None
             fields[elem['check']] = elem
 
-        if len(fields) != len(self.column_names):
+        if len(fields) != len(column_keys):
             self.log.debug("Fields does not match")
             return None
 
-        if len(self.column_names) == 0:
+        if len(column_keys) == 0:
             return None
 
         out = self.col_sep + " " * self.spaces
@@ -143,13 +148,15 @@ class Out(object):
 
         for elem in self.column_names:
 
-            node_status = fields[elem]['status']
+            check = elem['key']
+
+            node_status = fields[check]['status']
             failed_check = ""
 
-            if fields[elem]['failed check']:
-                failed_check = "({})".format(fields[elem]['failed check'])
+            if fields[check]['failed check']:
+                failed_check = "({})".format(fields[check]['failed check'])
 
-            cat = fields[elem]['category']
+            cat = fields[check]['category']
             if self.show_only_non_green:
                 if self.color_mapping[cat] == 'GOOD':
                     skip &= True
@@ -189,7 +196,7 @@ class Out(object):
             # are counted in lenght, but do not use position on screen
             out_status += " " * (self.status_col - status_len)
 
-            node_details = fields[elem]['details']
+            node_details = fields[check]['details']
 
             if len(node_details) > self.detail_col:
                 node_details = node_details[:(self.detail_col - 3)] + "..."

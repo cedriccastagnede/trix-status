@@ -21,6 +21,7 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 
 from trix_status.out import Out
+from trix_status.config import available_checks
 from healthstatus import HealthStatus
 from ipmistatus import IPMIStatus
 from slurmstatus import SlurmStatus
@@ -146,10 +147,18 @@ class Status(AbstractStatus):
             # otherwise we will read creds files in every thread
             self.zabbix_creds = ZabbixStatus().get_credentials()
 
+
         self.out = Out(
             max_node_name=max_node_name,
             total=len(self.nodes),
-            args=self.args
+            args=self.args,
+            index_col='Nodes',
+            columns=[
+                {
+                    'key': e,
+                    'column': available_checks[e]
+                } for e in self.args.checks
+            ]
         )
 
         if not self.sorted_output:

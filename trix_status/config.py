@@ -27,42 +27,45 @@ config_file = "/etc/trinity/trix-status.conf"
 
 class category:
     # red
-    UNKN = 0
-    DOWN = 1
-    ERROR = 2
+    UNKN    = 0
+    DOWN    = 1
+    ERROR   = 2
     # yellow
-    WARN = 3
-    BUSY = 4
+    WARN    = 3
+    BUSY    = 4
     # green
-    GOOD = 5
+    GOOD    = 5
+    PASSIVE = 6
 
 class colors:
-    NONE = None
-    RED = "\033[31m"
-    LIGHTRED = "\033[91m"
-    YELLOW = "\033[33m"
-    LIGHTYELLOW = "\033[93m"
-    CYAN = "\033[36m"
-    LIGHTCYAN = "\033[96m"
-    GREEN = "\033[32m"
-    LIGHTGREEN = "\033[92m"
-    DEFAULT = "\033[39m"
-    BGLIGHGRAY = "\033[47m"
-    BGBLACK = "\033[40m"
-    BGDEFAULT = "\033[49m"
+    NONE            = None
+    RED             = "\033[31m"
+    LIGHTRED        = "\033[91m"
+    YELLOW          = "\033[33m"
+    LIGHTYELLOW     = "\033[93m"
+    CYAN            = "\033[36m"
+    LIGHTCYAN       = "\033[96m"
+    GREEN           = "\033[32m"
+    LIGHTGREEN      = "\033[92m"
+    DEFAULT         = "\033[39m"
+    BGLIGHGRAY      = "\033[47m"
+    BGBLACK         = "\033[40m"
+    BGDEFAULT       = "\033[49m"
 
 default_color_mapping = {
-    category.UNKN:  'ERR',
-    category.DOWN:  'ERR',
-    category.ERROR: 'ERR',
-    category.WARN:  'WARN',
-    category.BUSY:  'WARN',
-    category.GOOD:  'GOOD',
+    category.UNKN:      'ERR',
+    category.DOWN:      'ERR',
+    category.ERROR:     'ERR',
+    category.WARN:      'WARN',
+    category.BUSY:      'WARN',
+    category.GOOD:      'GOOD',
+    category.PASSIVE:   'PASSIVE',
 }
 
 default_color_scheme = {
-    'ERR':   colors.RED,
-    'WARN':  colors.YELLOW,
-    'GOOD':  colors.GREEN,
+    'ERR':      colors.RED,
+    'WARN':     colors.YELLOW,
+    'GOOD':     colors.GREEN,
+    'PASSIVE':  colors.CYAN,
 }
 
