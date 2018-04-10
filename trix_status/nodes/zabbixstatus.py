@@ -153,14 +153,23 @@ class ZabbixStatus(NodeStatus):
         self.answer['details'] = latest_record['error']
         return latest_record['hostid']
 
-    def get_events(self, token, hostid):
+    def get_most_important_event(self, token, hostid=None):
+        triggers = self.get_triggers(token, hostid)
+        if triggers is None:
+            return -1
+        self.tagged_log_debug("Triggers for node: {}".format(triggers))
+        self.answer["details"] = " / ".join(
+            [e["description"] for e in triggers]
+        )
+        return int(triggers[0]["priority"])
+
+    def get_triggers(self, token, hostid=None):
         j = {
             'jsonrpc': '2.0',
             'method': 'problem.get',
             'auth': token,
             'id': 3,
             'params': {
-                "hostids": hostid,
                 "acknowledged": False,
                 "severities": list(range(0, 6)),
                 "output": "extend",
@@ -170,10 +179,13 @@ class ZabbixStatus(NodeStatus):
             },
         }
 
+        if hostid is not None:
+            j['params']['hostids'] = hostid
+
         z_answer = self.do_request(j)
 
         if not z_answer:
-            return -1  # no events
+            return None  # no events
 
         self.tagged_log_debug("Problems for node: {}".format(z_answer))
         objectsids = [e['objectid'] for e in z_answer]
@@ -185,19 +197,19 @@ class ZabbixStatus(NodeStatus):
             'id': 4,
             'params': {
                 "triggerids": objectsids,
-                'hostids': hostid,
                 'output': ["priority", "description"],
                 'sortfield': ['priority'],
                 "sortorder": "DESC",
+                "selectHosts": "extend",
 
             },
         }
+
+        if hostid is not None:
+            j['params']['hostids'] = hostid
+
         z_answer = self.do_request(j)
-        self.tagged_log_debug("Triggers for node: {}".format(z_answer))
-        self.answer["details"] = " / ".join(
-            [e["description"] for e in z_answer]
-        )
-        return int(z_answer[0]["priority"])
+        return z_answer
 
     def status(self):
         self.answer = {
@@ -225,7 +237,7 @@ class ZabbixStatus(NodeStatus):
             self.answer['failed check'] = self.answer['checks'][-1]
             return self.answer
 
-        max_event_priority = self.get_events(token, hostid)
+        max_event_priority = self.get_most_important_event(token, hostid)
 
         if max_event_priority > 2:
             self.answer["category"] = category.ERROR
@@ -239,5 +251,90 @@ class ZabbixStatus(NodeStatus):
 
         self.answer["category"] = category.GOOD
         self.answer["status"] = "OK"
+
+        return self.answer
+
+    def get_cluster_events(self):
+        self.answer = {
+            'check': 'zabbix',
+            'status': 'UNKN',
+            'category': category.UNKN,
+            'checks': [],
+            'failed check': '',
+            'details': ''
+        }
+
+        if self.username is None or self.username is None:
+            self.username, self.password = self.get_credentials()
+
+        token = self.get_token()
+        if not token:
+            self.answer['failed check'] = self.answer['checks'][-1]
+            return self.answer
+
+        triggers = []
+        for event in self.get_triggers(token):
+            for host in event['hosts']:
+                triggers.append({
+                    'priority': int(event['priority']),
+                    'host': host['host'],
+                    'description': event['description']
+                })
+
+        trigger_counts = [0] * 6
+        for e in triggers:
+            trigger_counts[e['priority']] += 1
+        worst_issue = int(
+            max(triggers, key=lambda x: int(x['priority']))['priority']
+        )
+
+        # 0 - (default) not classified;
+        # 1 - information;
+        # 2 - warning;
+        # 3 - average;
+        # 4 - high;
+        # 5 - disaster.
+        priority_map = {
+            0: 'NA',
+            1: 'INF',
+            2: 'WARN',
+            3: 'AVE',
+            4: 'HIGH',
+            5: 'DISA',
+        }
+
+        if worst_issue < 2:
+            self.answer['status'] = 'OK'
+            self.answer['category'] = category.GOOD
+
+        if worst_issue == 2:
+            self.answer['status'] = 'WARN'
+            self.answer['category'] = category.WARN
+
+        if worst_issue > 2:
+            self.answer['status'] = 'ERR'
+            self.answer['category'] = category.ERROR
+
+        # FIXME
+        # not really intuitive field
+        self.answer['failed check'] = '/'.join(
+            [str(e) for e in trigger_counts[::-1]]
+        )
+
+        self.answer['details'] = (
+            "disaster/high/average/warn/inform/non-class\n"
+        )
+
+        self.answer['details'] += "Events:\n"
+
+        self.answer['details'] += "\n".join([
+            "{}/{}/{};".format(
+                priority_map[e['priority']],
+                e['host'],
+                e['description']
+            ) for e in triggers
+        ])
+
+        triggers.sort(key=lambda x: x['priority'])
 
         return self.answer
