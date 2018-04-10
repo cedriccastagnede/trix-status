@@ -79,7 +79,7 @@ def parse_arguments():
         'show_only_non_green': False,
         'cast_unkn_as_good': False,
         'status_column': 15,
-        'details_column': 30,
+        'details_column': 0,
         'no_table': False,
         'no_statusbar': False,
         'verbose': False,

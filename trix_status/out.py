@@ -18,6 +18,7 @@ along with slurm_health_checker.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import sys
 import config
+import os
 
 from config import category, colors
 from config import default_color_mapping, default_color_scheme
@@ -29,9 +30,15 @@ class Out(object):
                  index_col='', columns=[], spaces=4):
         module_name = self.__module__ + "." + type(self).__name__
         self.log = logging.getLogger(module_name)
+        self.screen_width = int(os.popen('stty size', 'r').read().split()[1])
 
         self.max_node_name = max_node_name
         self.status_col = args.status_column
+        max_col_len = int(
+            max([len(e['column']) for e in columns])
+        ) or 0
+        if self.status_col < max_col_len:
+            self.status_col = max_col_len
         self.detail_col = args.details_column
         self.done = 0
         self.total = total
@@ -63,6 +70,10 @@ class Out(object):
             [max_node_name]
             + [self.status_col] * len(self.column_names)
         )
+
+        if self.detail_col == 0:
+            self.detail_col = self.calculate_detail_width()
+
         if self.verbose:
             self.lengths = (
                 [max_node_name]
@@ -92,6 +103,20 @@ class Out(object):
             color_mapping,
             {k: color_scheme[v] for k, v in color_mapping.items()}
         )
+
+    def calculate_detail_width(self):
+        min_len = len('Details')
+        width = self.screen_width
+        width -= (1 + self.spaces + self.max_node_name + self.spaces)
+        width /= len(self.column_names)
+        width -= (
+            1 + self.spaces + self.status_col + self.spaces
+            + 1 + self.spaces + 0 + self.spaces
+        )
+        width -= 1
+        if width > min_len:
+            return width
+        return min_len
 
     def separator(self):
         if self.table:
@@ -196,7 +221,8 @@ class Out(object):
             # are counted in lenght, but do not use position on screen
             out_status += " " * (self.status_col - status_len)
 
-            node_details = fields[check]['details']
+            # TODO create proper way of dealing with '\n'
+            node_details = fields[check]['details'].replace('\n', '\\n')
 
             if len(node_details) > self.detail_col:
                 node_details = node_details[:(self.detail_col - 3)] + "..."
@@ -222,6 +248,9 @@ class Out(object):
         if self.no_statusbar:
             return
         width = len(self.sep) - 12
+
+        if width > self.screen_width - 12:
+            width = self.screen_width - 12
         if update:
             self.done += 1
         progress_perc = (100.*self.done)/self.total
