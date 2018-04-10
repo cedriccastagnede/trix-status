@@ -279,8 +279,18 @@ class Status(AbstractStatus):
         )
         self.out.header()
         self.check_zabbix_events()
+        self.check_zabbix_cluster_events()
         if ha:
             self.out_ha_status(ha)
             self.process_ha_resources(ha)
 
         self.out.separator()
+
+    def check_zabbix_cluster_events(self):
+        zabbixstat = ZabbixStatus()
+        answer = zabbixstat.get_cluster_events()
+        answers = []
+        for host in self.hosts:
+            answer['check'] = host
+            answers.append(answer.copy())
+        self.out.line('Zabbix-total', answers)
