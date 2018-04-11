@@ -9,6 +9,7 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 from trix_status.nodes.zabbixstatus import ZabbixStatus
 from trix_status.controllers.hastatus import HAStatus
+from trix_status.controllers.nonhastatus import NonHAStatus
 
 
 class Status(AbstractStatus):
@@ -53,8 +54,9 @@ class Status(AbstractStatus):
             )
             n_res = len(ha['resources'])
         else:
-            max_len = 10
-            n_res = 0
+            service_names = NonHAStatus().services
+            max_len = max([len(e) for e in service_names])
+            n_res = len(service_names)
 
         if max_len < len('Zabbix-total'):
             max_len =  len('Zabbix-total')
@@ -73,5 +75,8 @@ class Status(AbstractStatus):
 
         if ha:
             HAStatus(ha, out, self.args).get()
+        else:
+            NonHAStatus(out, self.args).get()
+
 
         out.separator()
