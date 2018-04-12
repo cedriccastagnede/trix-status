@@ -30,7 +30,7 @@ if __name__ == "__main__":
     if arguments.nodes:
         from trix_status import nodes as subj
 
-    if arguments.controllers:
+    if arguments.controllers or arguments.services:
         from trix_status import controllers as subj
 
     if subj is None:

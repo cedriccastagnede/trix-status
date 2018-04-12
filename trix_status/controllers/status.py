@@ -42,7 +42,10 @@ class Status(AbstractStatus):
 
     def get(self):
         ha_obj = HAStatus()
-        ha = ha_obj.if_ha()
+        if self.args.services:
+            ha = False
+        else:
+            ha = ha_obj.if_ha()
 
         if ha:
             self.hosts = ha_obj.hosts

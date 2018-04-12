@@ -106,6 +106,12 @@ def parse_arguments():
         default=False
     )
 
+    check_type.add_argument(
+        '--services', '-S', action="store_true",
+        help="Check controllers",
+        default=False
+    )
+
     parser.add_argument(
         "--sorted-output", "-s", action="store_true",
         help="Sort output by node name"
@@ -159,7 +165,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--status-column", "-S", type=int,
+        "--status-column", "-T", type=int,
         default=defaults['status_column'],
         help="Width of status column"
     )

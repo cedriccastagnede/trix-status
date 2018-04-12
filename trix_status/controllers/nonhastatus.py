@@ -6,9 +6,9 @@ from trix_status.utils import get_config, run_cmd
 from trix_status.config import category
 
 default_service_list = [
-    'named', 'dhcpd', 'chrony', 'ssh', 'fail2ban', 'firewalld', 'nginx',
-    'lweb', 'ltorrent', 'mariadb', 'mongodb', 'nfs', 'ldap', 'zabbix-server',
-    'zabbix-agent', 'sssd', 'slurm', 'munge', 'rsyslog',
+    'named', 'dhcpd', 'chronyd', 'sshd', 'fail2ban', 'firewalld', 'nginx',
+    'lweb', 'ltorrent', 'mariadb', 'mongod', 'nfs', 'slapd', 'zabbix-server',
+    'zabbix-agent', 'sssd', 'slurmctld', 'munge', 'rsyslog',
 ]
 
 class NonHAStatus(object):
@@ -37,11 +37,7 @@ class NonHAStatus(object):
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         if stdout.strip() != "enabled":
-            answer['status'] = 'ERR'
-            answer['category'] = category.WARN
-            answer['failed check'] = 'systemd'
             answer['details'] = 'Autostart is disabled for the unit'
-            return answer
 
         cmd = "systemctl status {}".format(service)
         rc, stdout, stderr, exc = run_cmd(cmd)
