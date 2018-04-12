@@ -21,11 +21,12 @@ import subprocess as sp
 import config
 import yaml
 import os
+from threading import Timer
 
 log = logging.getLogger("trix-status")
 
 
-def run_cmd(cmd):
+def run_cmd(cmd, timeout=30):
     """
     Returns 'rc', 'stdout', 'stderr', 'exception'
     Where 'exception' is a content of Python exception if any
@@ -37,7 +38,17 @@ def run_cmd(cmd):
             cmd, shell=True,
             stdout=sp.PIPE, stderr=sp.PIPE
         )
-        stdout, stderr = proc.communicate()
+        timer = Timer(
+            timeout, lambda p: p.kill(), [proc]
+        )
+        try:
+            timer.start()
+            stdout, stderr = proc.communicate()
+        except:
+            log.debug("Timeout executing '{}'".format(cmd))
+        finally:
+            timer.cancel()
+
         proc.wait()
         rc = proc.returncode
     except Exception as e:

@@ -222,7 +222,9 @@ class Out(object):
             out_status += " " * (self.status_col - status_len)
 
             # TODO create proper way of dealing with '\n'
-            node_details = fields[check]['details'].replace('\n', '\\n')
+            node_details = (
+                fields[check]['details'].strip().replace('\n', '\\n')
+            )
 
             if len(node_details) > self.detail_col:
                 node_details = node_details[:(self.detail_col - 3)] + "..."
