@@ -19,4 +19,5 @@ class Checker(object):
 
     @abstractmethod
     def status(self):
-        pass
+        res, comment = True, ""
+        return res, comment

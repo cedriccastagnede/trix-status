@@ -9,7 +9,7 @@ import importlib
 default_service_list = [
     'named', 'dhcpd', 'chronyd', 'sshd', 'fail2ban', 'firewalld', 'nginx',
     'lweb', 'ltorrent', 'mariadb', 'mongod', 'nfs', 'slapd', 'zabbix-server',
-    'zabbix-agent', 'sssd', 'slurmctld', 'munge', 'rsyslog',
+    'zabbix-agent', 'sssd', 'slurmctld', 'munge', 'rsyslog', 'slurmdbd'
 ]
 
 class NonHAStatus(object):
@@ -78,8 +78,9 @@ class NonHAStatus(object):
             answer['failed check'] = 'functional checker'
             answer['details'] += " "
             answer['details'] += comment
+            return answer
 
-        answer['status'] = "OK"
+        answer['status'] = "WORKS"
         answer['category'] = category.GOOD
 
         return answer
