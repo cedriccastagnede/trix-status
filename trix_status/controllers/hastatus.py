@@ -5,6 +5,7 @@ from trix_status.config import category
 import os
 import logging
 import xml.etree.ElementTree as ET
+import importlib
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 from trix_status.nodes.zabbixstatus import ZabbixStatus
@@ -139,6 +140,34 @@ class HAStatus(object):
 
         return answer
 
+    def service_checker(self, service_name, answer, host):
+        class_path = "trix_status.controllers.services." + service_name
+        class_name = service_name.capitalize()
+        try:
+            checker_module = importlib.import_module(class_path)
+            checker_class = getattr(checker_module, class_name)
+        except ImportError:
+            answer['details'] += " No checker module for " + service_name
+            return answer
+        except AttributeError:
+            answer['details'] += " No checker class " + class_name
+            return answer
+
+        checker = checker_class(args=self.args, host=host)
+        res, comment = checker.status()
+        if not res:
+            answer['status'] = "DOWN"
+            answer['category'] = category.ERROR
+            answer['failed check'] = 'functional checker'
+            answer['details'] += " "
+            answer['details'] += comment
+            return answer
+
+        answer['status'] = "WORKS"
+        answer['category'] = category.GOOD
+
+        return answer
+
     def check_systemd_unit(self, answer, res, host):
         if host in self.downed_hosts:
             return answer
@@ -168,8 +197,9 @@ class HAStatus(object):
                 answer['category'] = category.ERROR
                 answer['failed check'] = 'systemd'
                 answer['details'] = 'Unit is expecting to be running'
+                return answer
 
-            return answer
+            return self.service_checker(unit_name, answer, host)
 
         self.log.debug(
             (
@@ -183,6 +213,30 @@ class HAStatus(object):
             answer['details'] = 'Unit is expecting to be stopped'
 
         return answer
+
+    def check_drbd(self, answer, res, host):
+        cmd = 'ssh -o ConnectTimeout={} -o StrictHostKeyChecking=no {} '
+        cmd = cmd.format(self.args.timeout, host)
+        cmd += 'drbd-overview | grep trinity'
+        rc, stdout, stderr, exc = run_cmd(cmd)
+
+        if rc:
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = "{} returned non-zero exit code".format(cmd)
+            return answer
+
+        stdout = stdout.strip()
+        stdout = stdout.split()
+
+        if len(stdout) < 4 or stdout[3] < 9 or stdout[3][:8] != 'UpToDate':
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = 'DRBD status is not UpToDate'
+            return answer
+
+        return answer
+
 
     def get_downed_hosts(self, hosts):
         if self.out is None:
@@ -255,6 +309,12 @@ class HAStatus(object):
                 answer = self.check_systemd_unit(
                     answer, res, self.node_ids[node_id]
                 )
+
+            if res['resource_agent'].split(':')[-1] == 'drbd':
+                answer = self.check_drbd(
+                    answer, res, self.node_ids[node_id]
+                )
+
 
             answers.append(answer)
 
