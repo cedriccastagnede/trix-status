@@ -8,7 +8,12 @@ class Mongod(Checker):
         res, comment = True, ""
 
         ping = "111222333"
-        cmd = "mongo --eval '{ping: " + ping + "}'"
+        cmd = self.cmd_prefix
+        if self.cmd_prefix:
+            cmd += '"'
+        cmd += "mongo --eval '{ping: " + ping + "}'"
+        if self.cmd_prefix:
+            cmd += '"'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         stdout = stdout.strip().split('\n')

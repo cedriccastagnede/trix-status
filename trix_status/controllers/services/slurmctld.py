@@ -7,7 +7,8 @@ class Slurmctld(Checker):
     def status(self):
         res, comment = True, ''
 
-        cmd = (
+        cmd = self.cmd_prefix
+        cmd += (
             'scontrol ping'
         )
 

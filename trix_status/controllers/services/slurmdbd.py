@@ -7,7 +7,8 @@ class Slurmdbd(Checker):
     def status(self):
         res, comment = True, ""
 
-        cmd = 'sacctmgr -n list cluster'
+        cmd = self.cmd_prefix
+        cmd += 'sacctmgr -n list cluster'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         stdout = stdout.strip().split('\n')

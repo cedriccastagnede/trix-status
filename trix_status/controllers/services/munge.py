@@ -7,7 +7,8 @@ class Munge(Checker):
     def status(self):
         res, comment = True, ""
 
-        cmd = 'munge -n | unmunge'
+        cmd = self.cmd_prefix
+        cmd += 'munge -n | unmunge'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         stdout = stdout.strip().split('\n')

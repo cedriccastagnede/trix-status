@@ -6,7 +6,8 @@ class Named(Checker):
 
     def status(self):
         res, comment = True, ""
-        cmd = (
+        cmd = self.cmd_prefix
+        cmd += (
             "dig +tries=1 +time={} +short @localhost localhost"
         ).format(self.timeout)
         expected = "127.0.0.1"

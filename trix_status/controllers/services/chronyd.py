@@ -7,7 +7,8 @@ class Chronyd(Checker):
     def status(self):
         res, comment = True, ''
 
-        cmd = 'chronyc tracking'
+        cmd = self.cmd_prefix
+        cmd += 'chronyc tracking'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         if rc != 0:
@@ -31,7 +32,8 @@ class Chronyd(Checker):
             comment = 'Computer is not synchronised to any external source.'
             return res, comment
 
-        cmd = 'chronyc sources'
+        cmd = self.cmd_prefix
+        cmd += 'chronyc sources'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         if rc != 0:

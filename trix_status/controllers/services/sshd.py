@@ -7,7 +7,8 @@ class Sshd(Checker):
     def status(self):
         res, comment = True, ""
 
-        cmd = 'ssh localhost uptime'
+        cmd = self.cmd_prefix
+        cmd += 'ssh localhost uptime'
         rc, stdout, stderr, exc = run_cmd(cmd)
 
         if rc or len(stdout.strip().split('\n')) < 1:
