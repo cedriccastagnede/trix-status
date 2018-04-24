@@ -5,12 +5,8 @@ from multiprocessing import Lock
 from trix_status.utils import get_config, run_cmd
 from trix_status.config import category
 import importlib
+from trix_status.config import default_service_list
 
-default_service_list = [
-    'named', 'dhcpd', 'chronyd', 'sshd', 'fail2ban', 'firewalld', 'nginx',
-    'lweb', 'ltorrent', 'mariadb', 'mongod', 'nfs', 'slapd', 'zabbix-server',
-    'zabbix-agent', 'sssd', 'slurmctld', 'munge', 'rsyslog', 'slurmdbd'
-]
 
 class NonHAStatus(object):
 
@@ -26,11 +22,11 @@ class NonHAStatus(object):
 
     def check_systemd_unit(self, service):
         answer = {
-            'check': self.host,
+            'column': self.host,
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 
@@ -46,7 +42,7 @@ class NonHAStatus(object):
         if rc != 0:
             answer['status'] = 'DOWN'
             answer['category'] = category.ERROR
-            answer['failed check'] = 'systemd'
+            answer['info'] = 'systemd'
             answer['details'] = 'Unit is expecting to be running.'
 
             return answer
@@ -75,7 +71,7 @@ class NonHAStatus(object):
         if not res:
             answer['status'] = "DOWN"
             answer['category'] = category.ERROR
-            answer['failed check'] = 'functional checker'
+            answer['info'] = 'functional checker'
             answer['details'] += " "
             answer['details'] += comment
             return answer

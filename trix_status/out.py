@@ -153,10 +153,10 @@ class Out(object):
         column_keys = [e['key'] for e in self.column_names]
 
         for elem in json:
-            if 'check' not in elem or elem['check'] not in column_keys:
+            if 'column' not in elem or elem['column'] not in column_keys:
                 self.log.debug("Fields does not match")
                 return None
-            fields[elem['check']] = elem
+            fields[elem['column']] = elem
 
         if len(fields) != len(column_keys):
             self.log.debug("Fields does not match")
@@ -173,15 +173,15 @@ class Out(object):
 
         for elem in self.column_names:
 
-            check = elem['key']
+            column = elem['key']
 
-            node_status = fields[check]['status']
-            failed_check = ""
+            node_status = fields[column]['status']
+            info = ""
 
-            if fields[check]['failed check']:
-                failed_check = "({})".format(fields[check]['failed check'])
+            if fields[column]['info']:
+                info = "({})".format(fields[column]['info'])
 
-            cat = fields[check]['category']
+            cat = fields[column]['category']
             if self.show_only_non_green:
                 if self.color_mapping[cat] == 'GOOD':
                     skip &= True
@@ -195,18 +195,18 @@ class Out(object):
             if color is colors.NONE:
                 return
 
-            status_len = len(node_status) + len(failed_check)
-            out_status = node_status + failed_check
+            status_len = len(node_status) + len(info)
+            out_status = node_status + info
 
-            # if status+failed_check do not fir into column
+            # if status+info do not fit into column
             # cut and add '...' on the end
             if status_len > self.status_col:
                 out_status = out_status[:(self.status_col - 3)] + "..."
 
             if self.color:
                 # Several cases here. It depends on column width
-                # 1. STATUS(failed_check)
-                # 2. STATUS(faile...
+                # 1. STATUS(info)
+                # 2. STATUS(i...
                 # 3. STA...
                 # start with 3
                 if len(out_status) - 3 < len(node_status):
@@ -223,7 +223,7 @@ class Out(object):
 
             # TODO create proper way of dealing with '\n'
             node_details = (
-                fields[check]['details'].strip().replace('\n', '\\n')
+                fields[column]['details'].strip().replace('\n', '\\n')
             )
 
             if len(node_details) > self.detail_col:

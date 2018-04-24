@@ -30,7 +30,7 @@ class HealthStatus(NodeStatus):
 
     def check_resolv(self):
         self.tagged_log_debug("Check if we can resolve hostname")
-        self.answer['checks'].append('resolve')
+        self.answer['history'].append('resolve')
 
         rc, stdout, stdout_lines, stderr = self.cmd(
             "host -W {} {}".format(self.timeout, self.node))
@@ -44,7 +44,7 @@ class HealthStatus(NodeStatus):
 
     def check_ping(self):
         self.tagged_log_debug("Check if node is pingable")
-        self.answer['checks'].append('ping')
+        self.answer['history'].append('ping')
 
         rc, stdout, stdout_lines, stderr = self.cmd(
             "ping -c1 -w{} {}".format(self.timeout, self.node)
@@ -60,7 +60,7 @@ class HealthStatus(NodeStatus):
 
     def check_ssh_port(self):
         self.tagged_log_debug("Check if ssh port is open")
-        self.answer['checks'].append('ssh port')
+        self.answer['history'].append('ssh port')
 
         try:
             rc = 1
@@ -84,7 +84,7 @@ class HealthStatus(NodeStatus):
 
     def check_ssh(self):
         self.tagged_log_debug("Check if node available via ssh")
-        self.answer['checks'].append('ssh')
+        self.answer['history'].append('ssh')
 
         rc, stdout, stdout_lines, stderr = self.cmd(
             (
@@ -126,7 +126,7 @@ class HealthStatus(NodeStatus):
 
     def check_mounts(self):
         self.tagged_log_debug("Check if node have healthy mountpoints")
-        self.answer['checks'].append('mounts')
+        self.answer['history'].append('mounts')
 
         try:
             fs_mounts = self._get_mountfs_from_confg()
@@ -216,39 +216,39 @@ class HealthStatus(NodeStatus):
     def status(self):
         self.tagged_log_debug("Health checker started")
         self.answer = {
-            'check': 'health',
+            'column': 'health',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 
         if not self.check_resolv():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         self.answer['status'] = 'DOWN'
 
         if not self.check_ping():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         if not self.check_ssh_port():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         self.answer['category'] = category.DOWN
 
         if not self.check_ssh():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         self.answer['status'] = 'AVAIL'
         self.answer['category'] = category.WARN
 
         if not self.check_mounts():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             self.answer['status'] = 'NO_FS'
             return self.answer
 

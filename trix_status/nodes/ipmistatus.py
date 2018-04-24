@@ -34,12 +34,12 @@ class IPMIStatus(NodeStatus):
         self.password = password
 
     def check_ipmi_configured(self):
-        self.answer['checks'].append('config')
+        self.answer['history'].append('config')
 
         return (self.ip and self.username and self.password)
 
     def check_udp_ping(self):
-        self.answer['checks'].append('udp_ping')
+        self.answer['history'].append('udp_ping')
 
         ipmi_message = (
             "0600ff07000000000000000000092018c88100388e04b5").decode('hex')
@@ -58,7 +58,7 @@ class IPMIStatus(NodeStatus):
     def check_ping(self):
 
         self.tagged_log_debug("Check if IPMI IP is pingable")
-        self.answer['checks'].append('ping')
+        self.answer['history'].append('ping')
 
         rc, stdout, stdout_lines, stderr = self.cmd(
             "ping -c1 -w{} {}".format(self.timeout, self.ip)
@@ -69,7 +69,7 @@ class IPMIStatus(NodeStatus):
 
     def check_power(self):
         self.tagged_log_debug("Check power status of the node")
-        self.answer['checks'].append('power')
+        self.answer['history'].append('power')
 
         rc, stdout, stdout_lines, stderr = self.cmd(
             (
@@ -86,30 +86,30 @@ class IPMIStatus(NodeStatus):
     def status(self):
         self.tagged_log_debug("IPMI checker started")
         self.answer = {
-            'check': 'ipmi',
+            'column': 'ipmi',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 
         if not self.check_ipmi_configured():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         if not self.check_udp_ping():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         if not self.check_ping():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         self.answer['category'] = category.WARN
 
         if not self.check_power():
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         if self.answer['status'] == 'ON':

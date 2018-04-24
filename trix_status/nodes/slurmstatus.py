@@ -28,11 +28,11 @@ class SlurmStatus(NodeStatus):
 
     def status(self):
         self.answer = {
-            'check': 'slurm',
+            'column': 'slurm',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 

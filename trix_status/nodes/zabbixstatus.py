@@ -109,7 +109,7 @@ class ZabbixStatus(NodeStatus):
         return r['result'], ""
 
     def do_request(self, j):
-        self.answer['checks'].append(j['method'])
+        self.answer['history'].append(j['method'])
         data, details = self._do_request(j)
         if details:
             self.answer['details'] += " |{}: ".format(j['method'])
@@ -213,11 +213,11 @@ class ZabbixStatus(NodeStatus):
 
     def status(self):
         self.answer = {
-            'check': 'zabbix',
+            'column': 'zabbix',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 
@@ -229,12 +229,12 @@ class ZabbixStatus(NodeStatus):
 
         token = self.get_token()
         if not token:
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         hostid = self.get_hostid(token)
         if not hostid:
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         max_event_priority = self.get_most_important_event(token, hostid)
@@ -256,11 +256,11 @@ class ZabbixStatus(NodeStatus):
 
     def get_cluster_events(self):
         self.answer = {
-            'check': 'zabbix',
+            'column': 'zabbix',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
 
@@ -269,7 +269,7 @@ class ZabbixStatus(NodeStatus):
 
         token = self.get_token()
         if not token:
-            self.answer['failed check'] = self.answer['checks'][-1]
+            self.answer['info'] = self.answer['history'][-1]
             return self.answer
 
         triggers = []
@@ -315,9 +315,7 @@ class ZabbixStatus(NodeStatus):
             self.answer['status'] = 'ERR'
             self.answer['category'] = category.ERROR
 
-        # FIXME
-        # not really intuitive field
-        self.answer['failed check'] = '/'.join(
+        self.answer['info'] = '/'.join(
             [str(e) for e in trigger_counts[::-1]]
         )
 

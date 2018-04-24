@@ -26,11 +26,11 @@ class LunaStatus(NodeStatus):
 
     def status(self):
         self.answer = {
-            'check': 'luna',
+            'column': 'luna',
             'status': 'UNKN',
             'category': category.UNKN,
-            'checks': [],
-            'failed check': '',
+            'history': [],
+            'info': '',
             'details': ''
         }
         node = luna.Node(self.node)

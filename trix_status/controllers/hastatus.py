@@ -1,6 +1,6 @@
 from trix_status import AbstractStatus
 from trix_status.out import Out
-from trix_status.utils import run_cmd
+from trix_status.utils import run_cmd, get_config
 from trix_status.config import category
 import os
 import logging
@@ -9,6 +9,7 @@ import importlib
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
 from trix_status.nodes.zabbixstatus import ZabbixStatus
+from trix_status.config import default_service_list
 
 
 class HAStatus(object):
@@ -65,11 +66,11 @@ class HAStatus(object):
         answers = []
         for elem in self.ha_status['nodes']:
             answer = {
-                'check': elem['name'],
+                'column': elem['name'],
                 'status': 'UNKN',
                 'category': category.UNKN,
-                'checks': [],
-                'failed check': '',
+                'history': [],
+                'info': '',
                 'details': ''
             }
             n_res = elem['resources_running']
@@ -91,9 +92,7 @@ class HAStatus(object):
             else:
                 answer['status'] = 'DOWN'
 
-            # FIXME not a proper (logically) field to put details to show
-            # but for the sake of aestetic
-            answer['failed check'] = n_res
+            answer['info'] = n_res
             answers.append(answer)
 
         self.out.line('HA', answers)
@@ -158,7 +157,7 @@ class HAStatus(object):
         if not res:
             answer['status'] = "DOWN"
             answer['category'] = category.ERROR
-            answer['failed check'] = 'functional checker'
+            answer['info'] = 'functional checker'
             answer['details'] += " "
             answer['details'] += comment
             return answer
@@ -181,7 +180,7 @@ class HAStatus(object):
         if stdout.strip() != "disabled":
             answer['status'] = 'ERR'
             answer['category'] = category.ERROR
-            answer['failed check'] = 'systemd'
+            answer['info'] = 'systemd'
             answer['details'] = 'Unit expecting to be disabled in pacemaker'
 
         cmd = cmd_prefix + "systemctl status {}".format(unit_name)
@@ -195,7 +194,7 @@ class HAStatus(object):
             if rc != 0:
                 answer['status'] = 'DOWN'
                 answer['category'] = category.ERROR
-                answer['failed check'] = 'systemd'
+                answer['info'] = 'systemd'
                 answer['details'] = 'Unit is expecting to be running'
                 return answer
 
@@ -209,7 +208,7 @@ class HAStatus(object):
         if rc == 0:
             answer['status'] = 'ERR'
             answer['category'] = category.ERROR
-            answer['failed check'] = 'systemd'
+            answer['info'] = 'systemd'
             answer['details'] = 'Unit is expecting to be stopped'
 
         return answer
@@ -245,11 +244,11 @@ class HAStatus(object):
         answers = []
         for host in hosts:
             answer = {
-                'check': host,
+                'column': host,
                 'status': 'UNKN',
                 'category': category.UNKN,
-                'checks': [],
-                'failed check': '',
+                'history': [],
+                'info': '',
                 'details': ''
             }
             cmd = (
@@ -293,11 +292,11 @@ class HAStatus(object):
         answers = []
         for node_id in self.node_ids:
             answer = {
-                'check': self.node_ids[node_id],
+                'column': self.node_ids[node_id],
                 'status': 'UNKN',
                 'category': category.UNKN,
-                'checks': [],
-                'failed check': '',
+                'history': [],
+                'info': '',
                 'details': str(res)
             }
 
@@ -322,6 +321,43 @@ class HAStatus(object):
             self.out.line(service, answers)
             self.out.statusbar()
 
+    def process_default_services(self):
+        services = get_config(
+            'controllers', {'services': default_service_list}
+        )['services']
+        ha_services = [e['resource_agent'] for e in self.ha_status['resources']]
+        ha_services = filter(lambda x: x[:8] == 'systemd:', ha_services)
+        ha_services = [e[8:] for e in ha_services]
+        services = [e for e in services if e not in ha_services]
+
+        thread_pool = ThreadPool(processes=self.args.fanout)
+        self.lock = Lock()
+        self.log.debug('Map main workers to threads')
+
+        workers_return = thread_pool.map(
+            self.default_services_worker, services
+        )
+
+    def default_services_worker(self, service):
+        answers = []
+        for node_id, host in self.node_ids.items():
+            answer = {
+                'column': host,
+                'status': 'UNKN',
+                'category': category.UNKN,
+                'history': [],
+                'info': '',
+                'details': ''
+            }
+            answers.append(answer)
+
+        with self.lock:
+            self.out.line(service, answers)
+
+        return answers
+
+
     def get(self):
         self.out_ha_status()
         self.process_ha_resources()
+        self.process_default_services()

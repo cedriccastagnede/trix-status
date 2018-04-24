@@ -27,7 +27,7 @@ class Status(AbstractStatus):
         for host in self.hosts:
             zabbixstat = ZabbixStatus(host)
             answer = zabbixstat.status()
-            answer['check'] = host
+            answer['column'] = host
             answers.append(answer)
         return answers
 
@@ -36,7 +36,7 @@ class Status(AbstractStatus):
         answer = zabbixstat.get_cluster_events()
         answers = []
         for host in self.hosts:
-            answer['check'] = host
+            answer['column'] = host
             answers.append(answer.copy())
         return answers
 

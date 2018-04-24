@@ -25,6 +25,14 @@ available_checks = {
 
 config_file = "/etc/trinity/trix-status.conf"
 
+default_service_list = [
+    'named', 'dhcpd', 'chronyd', 'sshd', 'fail2ban', 'firewalld', 'nginx',
+    'lweb', 'ltorrent', 'mariadb', 'mongod', 'nfs', 'slapd', 'zabbix-server',
+    'zabbix-agent', 'sssd', 'slurmctld', 'munge', 'rsyslog', 'slurmdbd',
+    'snmptrapd'
+]
+
+
 class category:
     # red
     UNKN    = 0
@@ -68,4 +76,5 @@ default_color_scheme = {
     'GOOD':     colors.GREEN,
     'PASSIVE':  colors.CYAN,
 }
+
 
