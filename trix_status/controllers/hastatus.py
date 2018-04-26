@@ -1,18 +1,15 @@
-from trix_status import AbstractStatus
-from trix_status.out import Out
 from trix_status.utils import run_cmd, get_config
 from trix_status.config import category
+from trix_status.controllers.systemdchecks import SystemdChecks
 import os
 import logging
 import xml.etree.ElementTree as ET
-import importlib
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Lock
-from trix_status.nodes.zabbixstatus import ZabbixStatus
 from trix_status.config import default_service_list
 
 
-class HAStatus(object):
+class HAStatus(SystemdChecks):
 
     def __init__(self, ha_status=None, out=None, args=None):
         module_name = self.__module__ + "." + type(self).__name__
@@ -21,10 +18,24 @@ class HAStatus(object):
         self.downed_hosts = set([])
         self.services = []
         self.ha_status = ha_status
-        self.out=out
+        self.out = out
         self.args = args
         if self.ha_status is None:
             self.ha_status = self.if_ha()
+
+        self.node_ids = {
+            e['id']: e['name'] for e in self.ha_status['nodes']
+        }
+
+
+    def _get_res(self, resource):
+        xml_running_on = resource.findall('node')
+        running_on = []
+        for node in xml_running_on:
+            running_on.append(node.attrib)
+            res = resource.attrib.copy()
+            res['running_on'] = running_on
+        return res
 
     def if_ha(self):
         rc, stdout, stderr, exc = run_cmd("crm_mon -r -1 -X")
@@ -41,14 +52,13 @@ class HAStatus(object):
         ha_status = {'nodes': [], 'resources': []}
         xml_nodes = xml_root.find('nodes')
         for container in xml_root.find('resources'):
-            for resource in container.findall('resource'):
-                xml_running_on = resource.findall('node')
-                running_on = []
-                for node in xml_running_on:
-                    running_on.append(node.attrib)
-                res = resource.attrib.copy()
-                res['running_on'] = running_on
+            if container.tag == 'resource':
+                res = self._get_res(container)
                 ha_status['resources'].append(res)
+            else:
+                for resource in container.findall('resource'):
+                    res = self._get_res(resource)
+                    ha_status['resources'].append(res)
 
         if xml_nodes is None:
             return False
@@ -58,6 +68,7 @@ class HAStatus(object):
             hostname = attr['name']
             if hostname not in self.hosts:
                 self.hosts.append(hostname)
+
         return ha_status
 
     def out_ha_status(self):
@@ -111,7 +122,11 @@ class HAStatus(object):
         if len(res['running_on']) == 1:
             active_node = res['running_on'][0]['id']
             if node_id == active_node:
-                answer['status'] = res['role'].upper()
+                if res['role'] == 'Started':
+                    answer['status'] = 'UP'
+                else:
+                    answer['status'] = res['role'].upper()
+
                 answer['category'] = category.GOOD
             else:
                 answer['status'] = "-"
@@ -139,80 +154,6 @@ class HAStatus(object):
 
         return answer
 
-    def service_checker(self, service_name, answer, host):
-        class_path = "trix_status.controllers.services." + service_name
-        class_name = service_name.capitalize()
-        try:
-            checker_module = importlib.import_module(class_path)
-            checker_class = getattr(checker_module, class_name)
-        except ImportError:
-            answer['details'] += " No checker module for " + service_name
-            return answer
-        except AttributeError:
-            answer['details'] += " No checker class " + class_name
-            return answer
-
-        checker = checker_class(args=self.args, host=host)
-        res, comment = checker.status()
-        if not res:
-            answer['status'] = "DOWN"
-            answer['category'] = category.ERROR
-            answer['info'] = 'functional checker'
-            answer['details'] += " "
-            answer['details'] += comment
-            return answer
-
-        answer['status'] = "WORKS"
-        answer['category'] = category.GOOD
-
-        return answer
-
-    def check_systemd_unit(self, answer, res, host):
-        if host in self.downed_hosts:
-            return answer
-        unit_name = res['resource_agent'].split(':')[-1]
-        cmd_prefix = (
-            "ssh -o ConnectTimeout={} -o StrictHostKeyChecking=no {} "
-        ).format(self.args.timeout, host)
-        cmd = cmd_prefix + "systemctl is-enabled " + unit_name
-        rc, stdout, stderr, exc = run_cmd(cmd)
-
-        if stdout.strip() != "disabled":
-            answer['status'] = 'ERR'
-            answer['category'] = category.ERROR
-            answer['info'] = 'systemd'
-            answer['details'] = 'Unit expecting to be disabled in pacemaker'
-
-        cmd = cmd_prefix + "systemctl status {}".format(unit_name)
-        rc, stdout, stderr, exc = run_cmd(cmd)
-        if answer['category'] == category.GOOD:
-            self.log.debug(
-                (
-                    "Service {} is expected to be running on host {}"
-                ).format(unit_name, host)
-            )
-            if rc != 0:
-                answer['status'] = 'DOWN'
-                answer['category'] = category.ERROR
-                answer['info'] = 'systemd'
-                answer['details'] = 'Unit is expecting to be running'
-                return answer
-
-            return self.service_checker(unit_name, answer, host)
-
-        self.log.debug(
-            (
-                "Service {} is expected to be stopped on host {}"
-            ).format(unit_name, host)
-        )
-        if rc == 0:
-            answer['status'] = 'ERR'
-            answer['category'] = category.ERROR
-            answer['info'] = 'systemd'
-            answer['details'] = 'Unit is expecting to be stopped'
-
-        return answer
-
     def check_drbd(self, answer, res, host):
         cmd = 'ssh -o ConnectTimeout={} -o StrictHostKeyChecking=no {} '
         cmd = cmd.format(self.args.timeout, host)
@@ -235,7 +176,6 @@ class HAStatus(object):
             return answer
 
         return answer
-
 
     def get_downed_hosts(self, hosts):
         if self.out is None:
@@ -268,9 +208,6 @@ class HAStatus(object):
         return set(downed)
 
     def process_ha_resources(self):
-        self.node_ids = {
-            e['id']: e['name'] for e in self.ha_status['nodes']
-        }
         self.downed_hosts = self.get_downed_hosts(self.hosts)
         self.log.debug('Start thread pool')
         thread_pool = ThreadPool(processes=self.args.fanout)
@@ -305,15 +242,18 @@ class HAStatus(object):
             res_agent = ":".join(res['resource_agent'].split(':')[:-1])
 
             if res_agent == 'systemd':
+                service = res['resource_agent'].split(':')[-1]
+                host = self.node_ids[node_id]
+                need_started = host in [e['name'] for e in res['running_on']]
                 answer = self.check_systemd_unit(
-                    answer, res, self.node_ids[node_id]
+                    answer, service, host,
+                    need_enabled=False, need_started=need_started
                 )
 
             if res['resource_agent'].split(':')[-1] == 'drbd':
                 answer = self.check_drbd(
                     answer, res, self.node_ids[node_id]
                 )
-
 
             answers.append(answer)
 
@@ -325,10 +265,13 @@ class HAStatus(object):
         services = get_config(
             'controllers', {'services': default_service_list}
         )['services']
-        ha_services = [e['resource_agent'] for e in self.ha_status['resources']]
+        ha_services = [
+            e['resource_agent'] for e in self.ha_status['resources']
+        ]
         ha_services = filter(lambda x: x[:8] == 'systemd:', ha_services)
         ha_services = [e[8:] for e in ha_services]
-        services = [e for e in services if e not in ha_services]
+        # nfs is special
+        services = [e for e in services if e not in ha_services and e != 'nfs']
 
         thread_pool = ThreadPool(processes=self.args.fanout)
         self.lock = Lock()
@@ -337,6 +280,8 @@ class HAStatus(object):
         workers_return = thread_pool.map(
             self.default_services_worker, services
         )
+
+        return workers_return
 
     def default_services_worker(self, service):
         answers = []
@@ -349,6 +294,9 @@ class HAStatus(object):
                 'info': '',
                 'details': ''
             }
+            answer = self.check_systemd_unit(
+                answer, service, host=host,
+            )
             answers.append(answer)
 
         with self.lock:
@@ -356,8 +304,30 @@ class HAStatus(object):
 
         return answers
 
+    def check_fencing(self):
+        stonith_conf = []
+        for res in self.ha_status['resources']:
+            agent = res['resource_agent']
+            if len(agent) >= 8 and agent[:8] == 'stonith:':
+                stonith_conf.append(res)
+        answers = []
+        for node_id, host in self.node_ids.items():
+            answer = {
+                'column': host,
+                'status': 'UNKN',
+                'category': category.UNKN,
+                'history': [],
+                'info': '',
+                'details': ''
+            }
+            answers.append(answer)
+
+        self.out.line('STONITH', answers)
+
+        return answers
 
     def get(self):
         self.out_ha_status()
+        self.check_fencing()
         self.process_ha_resources()
         self.process_default_services()
