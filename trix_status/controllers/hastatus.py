@@ -30,6 +30,7 @@ class HAStatus(SystemdChecks):
     def _get_res(self, resource):
         xml_running_on = resource.findall('node')
         running_on = []
+        res = None
         for node in xml_running_on:
             running_on.append(node.attrib)
             res = resource.attrib.copy()
@@ -53,11 +54,13 @@ class HAStatus(SystemdChecks):
         for container in xml_root.find('resources'):
             if container.tag == 'resource':
                 res = self._get_res(container)
-                ha_status['resources'].append(res)
+                if res is not None:
+                    ha_status['resources'].append(res)
             else:
                 for resource in container.findall('resource'):
                     res = self._get_res(resource)
-                    ha_status['resources'].append(res)
+                    if res is not None:
+                        ha_status['resources'].append(res)
 
         if xml_nodes is None:
             return False
@@ -85,20 +88,21 @@ class HAStatus(SystemdChecks):
             }
             n_res = elem['resources_running']
 
-            if elem['maintenance'] == 'true':
-                answer['status'] = 'MAINT'
-                answer['category'] = category.WARN
-
-            if elem['standby'] == 'true':
-                answer['status'] = 'STNDBY'
-                answer['category'] = category.WARN
-
             if elem['online'] == 'true':
                 answer['status'] = 'OK'
                 if int(n_res) > 0:
                     answer['category'] = category.GOOD
                 else:
                     answer['category'] = category.WARN
+
+                if elem['maintenance'] == 'true':
+                    answer['status'] = 'MAINT'
+                    answer['category'] = category.WARN
+
+                if elem['standby'] == 'true':
+                    answer['status'] = 'STANDBY'
+                    answer['category'] = category.WARN
+
             else:
                 answer['status'] = 'DOWN'
 
@@ -168,7 +172,7 @@ class HAStatus(SystemdChecks):
         stdout = stdout.strip()
         stdout = stdout.split()
 
-        if len(stdout) < 4 or stdout[3] < 9 or stdout[3][:8] != 'UpToDate':
+        if len(stdout) < 4 or stdout[3] < 7 or stdout[3][:6] != 'UpToDa':
             answer['status'] = 'ERR'
             answer['category'] = category.ERROR
             answer['details'] = 'DRBD status is not UpToDate'
