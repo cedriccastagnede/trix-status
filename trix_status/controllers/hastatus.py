@@ -27,7 +27,6 @@ class HAStatus(SystemdChecks):
             e['id']: e['name'] for e in self.ha_status['nodes']
         }
 
-
     def _get_res(self, resource):
         xml_running_on = resource.findall('node')
         running_on = []
@@ -306,20 +305,42 @@ class HAStatus(SystemdChecks):
 
     def check_fencing(self):
         stonith_conf = []
+        rc, stdout, stderr, exc = run_cmd("pcs property")
+        stonith_enabled = 'false'
+        if rc == 0:
+            stdout = stdout.split('\n')
+            for line in stdout:
+                find = ' stonith-enabled:'
+                if len(line) > len(find) and line[:len(find)] == find:
+                    stonith_enabled = line.split(':')[1].strip()
+
         for res in self.ha_status['resources']:
             agent = res['resource_agent']
-            if len(agent) >= 8 and agent[:8] == 'stonith:':
+            find = 'stonith:'
+            if len(agent) > len(find) and agent[:len(find)] == find:
                 stonith_conf.append(res)
         answers = []
         for node_id, host in self.node_ids.items():
             answer = {
                 'column': host,
-                'status': 'UNKN',
+                'status': 'UNCONFIG',
                 'category': category.UNKN,
                 'history': [],
                 'info': '',
                 'details': ''
             }
+            node_stonith = None
+            for res in stonith_conf:
+                nodes = [e['name'] for e in res['running_on']]
+                if host in nodes:
+                    node_stonith = res
+                    break
+            if node_stonith is not None:
+                if stonith_enabled == 'true':
+                    answer['status'] = 'CONFIGURED'
+                    answer['category'] = category.GOOD
+                else:
+                    answer['status'] = 'DISABLED'
             answers.append(answer)
 
         self.out.line('STONITH', answers)
