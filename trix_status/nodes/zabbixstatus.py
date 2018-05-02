@@ -50,6 +50,7 @@ class ZabbixStatus(NodeStatus):
         conf = {'url': z_url}
         conf = get_config('zabbix', conf)
         self.z_url = conf['url']
+        self.answer = {}
 
     def get_credentials(self):
         if self.username is not None and self.password is not None:
@@ -109,9 +110,10 @@ class ZabbixStatus(NodeStatus):
         return r['result'], ""
 
     def do_request(self, j):
-        self.answer['history'].append(j['method'])
+        if self.answer:
+            self.answer['history'].append(j['method'])
         data, details = self._do_request(j)
-        if details:
+        if details and self.answer:
             self.answer['details'] += " |{}: ".format(j['method'])
             self.answer['details'] += details
         return data
@@ -336,3 +338,24 @@ class ZabbixStatus(NodeStatus):
         triggers.sort(key=lambda x: x['priority'])
 
         return self.answer
+
+    def get_all_events(self):
+        if self.username is None or self.username is None:
+            self.username, self.password = self.get_credentials()
+
+        token = self.get_token()
+        if not token:
+            self.log.error("Unable to get auth token")
+            return None
+
+        triggers = []
+        for event in self.get_triggers(token):
+            for host in event['hosts']:
+                triggers.append({
+                    'priority': int(event['priority']),
+                    'host': host['host'],
+                    'description': event['description']
+                })
+
+        return triggers
+

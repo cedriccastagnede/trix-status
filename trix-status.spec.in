@@ -45,7 +45,7 @@ Small heath-checker for SLURM
 # Executable
 %{__install} -m 755 -D trix-status                              %{buildroot}%{_sbindir}/trix-status
 # Modules
-for d in trix_status trix_status/nodes trix_status/controllers trix_status/controllers/services; do
+for d in trix_status trix_status/nodes trix_status/controllers trix_status/controllers/services trix_status/zabbix; do
     %{__install} -m 755 -d $d                              %{buildroot}%{python_sitelib}/$d
 done
 for f in trix_status/*/*/*.py trix_status/*/*.py trix_status/*.py; do

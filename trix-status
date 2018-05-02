@@ -33,6 +33,9 @@ if __name__ == "__main__":
     if arguments.controllers or arguments.services:
         from trix_status import controllers as subj
 
+    if arguments.zabbix:
+        from trix_status import zabbix as subj
+
     if subj is None:
         log.error("No subject to check was specified")
         sys.exit(255)

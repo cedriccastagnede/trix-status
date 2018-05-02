@@ -123,6 +123,12 @@ def parse_arguments():
         default=False
     )
 
+    check_type.add_argument(
+        '--zabbix', '-Z', action="store_true",
+        help="Show zabbix status of the nodes",
+        default=False
+    )
+
     parser.add_argument(
         "--sorted-output", "-s", action="store_true",
         help="Sort output by node name"
