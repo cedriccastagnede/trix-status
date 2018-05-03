@@ -180,6 +180,59 @@ class HAStatus(SystemdChecks):
 
         return answer
 
+    def check_zfs(self, answer, res, host):
+        running_on = [e['name'] for e in res['running_on']]
+        if not running_on:
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = "ZFS is not running anywhere"
+            return answer
+
+        if len(running_on) > 1:
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = "pcs reported ZFS is mounted on 2 nodes"
+            return answer
+
+        running_on = running_on[0]
+
+        cmd = 'ssh -o ConnectTimeout={} -o StrictHostKeyChecking=no {} '
+        cmd = cmd.format(self.args.timeout, host)
+        cmd += 'zpool list -H -o name,health'
+        rc, stdout, stderr, exc = run_cmd(cmd)
+
+        if rc:
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = "'{}' returned non-zero exit code".format(cmd)
+            return answer
+
+        if stdout and host != running_on:
+            answer['status'] = 'ERR'
+            answer['category'] = category.ERROR
+            answer['details'] = (
+                "'{}' returned some output on passive node"
+            ).format(cmd)
+            return answer
+
+        if host != running_on:
+            return answer
+
+        stdout = stdout.strip().split('\n')
+        for line in stdout:
+            name, status = line.split()
+            if status != "ONLINE":
+                answer['status'] = 'ERR'
+                answer['category'] = category.ERROR
+                answer['details'] += (
+                    "Status of '{}' is '{}'"
+                ).format(name, status)
+        if answer['category'] != category.GOOD:
+            return answer
+
+        answer['status'] = 'ONLINE'
+        return answer
+
     def get_downed_hosts(self, hosts):
         if self.out is None:
             return
@@ -255,6 +308,11 @@ class HAStatus(SystemdChecks):
 
             if res['resource_agent'].split(':')[-1] == 'drbd':
                 answer = self.check_drbd(
+                    answer, res, self.node_ids[node_id]
+                )
+
+            if res['resource_agent'].split(':')[-1] == 'ZFS':
+                answer = self.check_zfs(
                     answer, res, self.node_ids[node_id]
                 )
 
