@@ -22,10 +22,11 @@ class HAStatus(SystemdChecks):
         self.args = args
         if self.ha_status is None:
             self.ha_status = self.if_ha()
-
-        self.node_ids = {
-            e['id']: e['name'] for e in self.ha_status['nodes']
-        }
+            self.node_ids = [self.hosts]
+        else:
+            self.node_ids = {
+                e['id']: e['name'] for e in self.ha_status['nodes']
+            }
 
     def _get_res(self, resource):
         xml_running_on = resource.findall('node')
