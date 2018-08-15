@@ -157,7 +157,7 @@ class ZabbixStatus(NodeStatus):
 
     def get_most_important_event(self, token, hostid=None):
         triggers = self.get_triggers(token, hostid)
-        if triggers is None:
+        if len(triggers) == 0:
             return -1
         self.tagged_log_debug("Triggers for node: {}".format(triggers))
         self.answer["details"] = " / ".join(
@@ -187,7 +187,7 @@ class ZabbixStatus(NodeStatus):
         z_answer = self.do_request(j)
 
         if not z_answer:
-            return None  # no events
+            return []  # no events
 
         self.tagged_log_debug("Problems for node: {}".format(z_answer))
         objectsids = [e['objectid'] for e in z_answer]
@@ -283,12 +283,17 @@ class ZabbixStatus(NodeStatus):
                     'description': event['description']
                 })
 
+
         trigger_counts = [0] * 6
         for e in triggers:
             trigger_counts[e['priority']] += 1
-        worst_issue = int(
-            max(triggers, key=lambda x: int(x['priority']))['priority']
-        )
+
+        if len(triggers) == 0:
+            worst_issue = 0
+        else:
+            worst_issue = int(
+                max(triggers, key=lambda x: int(x['priority']))['priority']
+            )
 
         # 0 - (default) not classified;
         # 1 - information;
