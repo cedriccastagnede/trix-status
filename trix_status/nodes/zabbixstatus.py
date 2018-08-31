@@ -21,6 +21,12 @@ import os
 import logging
 import json
 import urllib2
+import ssl
+from cryptography import x509
+from _socket import error as SocketError
+from ssl import SSLError
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.extensions import ExtensionNotFound
 
 default_username = "Admin"
 default_password = "zabbix"
@@ -47,9 +53,9 @@ class ZabbixStatus(NodeStatus):
             self.hostname = node
         else:
             self.hostname = hostname
-        conf = {'url': z_url}
+        conf = {}
         conf = get_config('zabbix', conf)
-        self.z_url = conf['url']
+        self.z_url = None
         self.answer = {}
 
     def get_credentials(self):
@@ -75,7 +81,65 @@ class ZabbixStatus(NodeStatus):
 
         return self.username, self.password
 
+    def get_https_zabbix_hosts(self):
+        hosts = []
+        try:
+            pem_data = str(ssl.get_server_certificate(("localhost", 443)))
+        except SocketError, SSLError:
+            return hosts, "https is not configured"
+        cert = x509.load_pem_x509_certificate(pem_data, default_backend())
+        cn = x509.ObjectIdentifier("2.5.4.3")
+        attrs = cert.subject.get_attributes_for_oid(cn)
+        if len(attrs) == 0:
+            return hosts, "No commonName is configured for the certicate"
+        hostname = attrs[0].value
+        hosts.append(hostname)
+        subjectAltName = x509.ObjectIdentifier("2.5.29.17")
+        try:
+            alt_hosts = (
+                cert
+                .extensions
+                .get_extension_for_oid(subjectAltName)
+                .value
+                .get_values_for_type(x509.DNSName)
+            )
+        except ExtensionNotFound:
+            alt_hosts = []
+        hosts.extend(alt_hosts)
+        return ["https://{}".format(h) for h in hosts], ""
+
+    def get_sabbix_url(self):
+        errors = []
+        servers, https_err = self.get_https_zabbix_hosts()
+        if https_err:
+            errors.append(errors)
+        servers.append("http://localhost")
+        doc = "/zabbix/api_jsonrpc.php"
+        possible_urls = [u + doc for u in servers if u is not None]
+        valid_urls = []
+        for url in possible_urls:
+            try:
+                req = urllib2.Request(url)
+                req.add_header('Content-Type', 'application/json')
+                r = next(urllib2.urlopen(
+                    req, json.dumps({}), timeout=self.timeout))
+                r = json.loads(r)
+                valid_urls.append(url)
+            except Exception as exc:
+                errors.append(str(exc))
+        if len(valid_urls) == 0:
+            return None, "|".join(errors)
+        return valid_urls[0], ""
+
+
     def _do_request(self, j):
+        err = ""
+        if self.z_url is None:
+            self.z_url, err = self.get_sabbix_url()
+        if self.z_url is None:
+            return False, err
+        else:
+            conf = {'url': self.z_url}
         if 'method' in j:
             method = j['method']
         else:
